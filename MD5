@@ -1,12 +1,12 @@
-7b464ac40ec8698e2187fb140e88ca87 *DESCRIPTION
+4e74e6cd0e90590c99127f25f837ae2c *DESCRIPTION
 676e12dbe88417e6b89f40effc5d6ad7 *NAMESPACE
 0ad95be4132d0d5bb1a7aa503289bb4e *R/addReactFixed.R
 1ddbd871cc3a7959d1ed985cb6704fea *R/data.R
 de81ef6ecc21ab9654ead1ff60014706 *R/expression.R
 60b07c047357e38e0eade78c019e0b74 *R/metaboGSE.R
 0e06fd38ae1395bf6698331521201b57 *R/rescue.R
-d681fdf58697f2fd27d7c31516006874 *R/submnet.R
-10126f816365ddd97227cd169017e944 *R/weightReacts.R
+bd12a3e0298f93f05f1b2f65e08cb5cc *R/submnet.R
+868f9c8a4fc45b35c069122afd4378b3 *R/weightReacts.R
 7620161586e663e3b4e7793f4bc42720 *build/vignette.rds
 56142ffdb8dcc7111cdbaad62dd6add5 *data/datalist
 1887434d73fadeb8be440be5835ce2ee *data/exprMaguire.RData
@@ -16,9 +16,9 @@ fe77581b146f4dd072f802df6fe59d57 *data/yarliGOdata.RData
 845a9ae9119df6e4e9a16360b1231b1c *data/yarliGSE.RData
 fb483dbaa3bc6e1c901fbda7a6b8b93e *data/yarliSubmnets.RData
 b04a9366b18719f295483a49d97cd132 *inst/CITATION
-9d9b2967e23b40a028e0534bf433c7b1 *inst/doc/metaboGSE.R
-d452eb950ba1bdbe436978123ad25096 *inst/doc/metaboGSE.Rmd
-12762245e81263f2cf9bc7a81c817560 *inst/doc/metaboGSE.pdf
+b75c408ba64e35b39ca478148ae8a322 *inst/doc/metaboGSE.R
+97d6cbbc26ae68f2ec803d4256e48c2c *inst/doc/metaboGSE.Rmd
+49e30c208c2ddbf1d06b1c65f1b32a65 *inst/doc/metaboGSE.pdf
 8e87bc26ef9037fe734cdfc44e1f48ed *man/abbr.Rd
 bb8e3895f9c00da2f7f257eeb399ff91 *man/addReactFixed.Rd
 f7146853b11d2d6bf993f3d14043d364 *man/area.Rd
@@ -36,7 +36,7 @@ b64992d4eace30a9f23f437af89fff96 *man/rescue.Rd
 8c3d5f17c33e7c46eba7494310ac9ea7 *man/rescueDist.Rd
 1ae97a1b05853dd94d26f3397cd64670 *man/rmGenes.Rd
 3d68cc0a9c05bd98f295966f301ed89d *man/scoreGeneDel.Rd
-1e1662a8c9f6bb7af1a4bc52e166aeae *man/simulateSubmnet.Rd
+7a23ea28d8f680b6bcd0e496556c3a31 *man/simulateSubmnet.Rd
 98a0328be323bcdc515bd5d171f2fae2 *man/submnet.Rd
 86cda743da41edb02cc28236afdd2367 *man/weightReacts.Rd
 b006727f9c6c3c551f59f97032358646 *man/yarli2GO.Rd
@@ -49,4 +49,4 @@ f60dca871cf6eba487544415da845f1d *man/yarliGSE.Rd
 9f61a1081ab7b3f76fd3dbd256d15841 *vignettes/Fig3bis.png
 91f577d52a6364b4d163581bd0dd5944 *vignettes/bibliography.bib
 80735b0bbdfd86a6026f0c8b9339ac7f *vignettes/elsevier-harvard-nodoi.csl
-d452eb950ba1bdbe436978123ad25096 *vignettes/metaboGSE.Rmd
+97d6cbbc26ae68f2ec803d4256e48c2c *vignettes/metaboGSE.Rmd

@@ -68,7 +68,7 @@ optimizeProb(hmodel.weight)
 
 ## ---- eval=TRUE, message=FALSE-------------------------------------------
 mc.cores <- 1
-rescue.weight <- weightReacts(hmodel.weight, mc.cores=mc.cores, gene.num=1)
+rescue.weight <- (weightReacts(hmodel.weight, mc.cores=mc.cores, gene.num=1))$weight
 str(rescue.weight, vec.len=2)
 
 ## ---- eval=TRUE, message=FALSE, warning=FALSE----------------------------

@@ -11,7 +11,7 @@ simulateSubmnet(sgd, mc.cores = 1, njt = NULL)
 
 \item{mc.cores}{The number of cores to use (at least 1), i.e. at most how many child processes will be run simultaneously. Default: 1.}
 
-\item{njt}{An object of class \code{phylo} for colored plot of fitness weighting schema (see /tmp/njt*.RData files). Default: NULL.}
+\item{njt}{An object of class \code{phylo} for colored plot of fitness weighting schema resulting from \code{weightReacts}. Default: NULL.}
 }
 \value{
 The significance levels

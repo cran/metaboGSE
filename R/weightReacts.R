@@ -295,14 +295,14 @@ weightReacts <- function(model, mc.cores = 1, gene.num = 1, draw.num = 1000) {
     weight.recos.norm   <- weight.recos/sum(weight.recos)   #- normalize weights
     weight.recos.norm   <- weight.recos.norm[rownames(distance)]
     
-    pdf(paste0("/tmp/recoclusterweight_", gene.num, "_", draw.num, substr(mod_key(model), 1,5), ".pdf"), width=8, height=12)
+    #pdf(paste0("/tmp/recoclusterweight_", gene.num, "_", draw.num, substr(mod_key(model), 1,5), ".pdf"), width=8, height=12)
     njt$weight <- signif(weight.recos.norm[njt$tip.label],3)
-    save(njt, file=paste0("/tmp/njt_", substr(mod_key(model), 1,5), ".RData"))
-    njt$tip.label <- paste(njt$tip.label, njt$weight, sep=" # ")
-    plot(njt, cex=0.8)
-    dev.off()
+    #save(njt, file=paste0("/tmp/njt_", substr(mod_key(model), 1,5), ".RData"))
+    #njt$tip.label <- paste(njt$tip.label, njt$weight, sep=" # ")
+    #plot(njt, cex=0.8)
+    #dev.off()
     
     names(weight.recos.norm) <- recos
     
-    return (weight.recos.norm)
+    return (list(weight=weight.recos.norm, njt=njt))
 }

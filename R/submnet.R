@@ -129,7 +129,7 @@ submnet <- function(model, expr, rescue.weight = NULL, ranks = NULL, step = 1, d
         gene.num.draw <- seq(0L, gene.num, step)
     }
     if (is.null(rescue.weight)) {
-        rescue.weight <- weightReacts(model, mc.cores=mc.cores, gene.num=1)
+        rescue.weight <- (weightReacts(model, mc.cores=mc.cores, gene.num=1))$weight
     }
     mc.cores2 <- max(1L, as.integer(floor(mc.cores/length(gene.num.draw))))
     mc.cores1 <- max(1L, as.integer(floor(mc.cores/mc.cores2)))
@@ -623,7 +623,7 @@ submnet <- function(model, expr, rescue.weight = NULL, ranks = NULL, step = 1, d
 #' This function computes the significance levels of different rankings compared to the random ranking for gene removal in a condition.
 #' @param sgd An object of class \code{scoreGeneDel}.
 #' @param mc.cores The number of cores to use (at least 1), i.e. at most how many child processes will be run simultaneously. Default: 1.
-#' @param njt An object of class \code{phylo} for colored plot of fitness weighting schema (see /tmp/njt*.RData files). Default: NULL.
+#' @param njt An object of class \code{phylo} for colored plot of fitness weighting schema resulting from \code{weightReacts}. Default: NULL.
 # #' @param cutoff A numeric value for the cutoff of gene removal. 
 # #' If \code{cutoff} <= 1, apply on removal fitness scores; if \code{cutoff} > 1, apply on number of removed genes. 
 # #' Default: NA, \code{cutoff} at fitness^opt.degree/remaining_genes peak.
