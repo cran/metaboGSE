@@ -17,6 +17,11 @@ rescueDist <- function(model, mc.cores = 1, gene.num = 1, draw.num = 1000, tol =
     if (!checkVersion(model)) {
         stop("model is of wrong version!")
     }
+
+    if (SYBIL_SETTINGS("OPT_DIRECTION") != "min") {
+        SYBIL_SETTINGS("OPT_DIRECTION", "min")
+        cat("SYBIL_SETTINGS(OPT_DIRECTION) has been set to", SYBIL_SETTINGS("OPT_DIRECTION"), "\n")
+    }
     type     <- 'g'
     genes    <- sybil::allGenes(model)
     reacs    <- react_id(model)
@@ -140,7 +145,7 @@ rescueDist <- function(model, mc.cores = 1, gene.num = 1, draw.num = 1000, tol =
     # heatmap.2(exist.recos[rowSums(exist.recos) > 0, , drop=F], scale="none", margins = c(8, 8),
     #           trace="none", col=colorRampPalette(c("white", "darkblue"))(n = 2))
     # dev.off()
-    
+
     ##- distance matrix of RECO existing status
     return (dist(t(exist.recos)))
 }
@@ -154,8 +159,8 @@ rescueDist <- function(model, mc.cores = 1, gene.num = 1, draw.num = 1000, tol =
 #' @param mc.cores The number of cores to use (at least 1), i.e. at most how many child processes will be run simultaneously. Default: 1.
 #' @param gene.num The number of genes to remove. If 1, \code{oneGeneDel} will be performed and draw.num will be ignored. Default: 1.
 #' @param draw.num The number of random draws. Default: 1000.
-#' @return A vector of weights for rescue reactions.
-#' @import ape
+#' @return A vector of weights for rescue reactions and an object of class \code{phylo} for colored plot of fitness weighting schema.
+#' @import ape sybil
 #' @examples 
 #' data(Ec_core)
 #' mod <- rescue(Ec_core, target=0.1)
@@ -167,6 +172,10 @@ weightReacts <- function(model, mc.cores = 1, gene.num = 1, draw.num = 1000) {
     }
     if (!checkVersion(model)) {
         stop("model is of wrong version!")
+    }
+    if (SYBIL_SETTINGS("OPT_DIRECTION") != "min") {
+        SYBIL_SETTINGS("OPT_DIRECTION", "min")
+        cat("SYBIL_SETTINGS(OPT_DIRECTION) has been set to", SYBIL_SETTINGS("OPT_DIRECTION"), "\n")
     }
     type <- 'h'
     dist <- rescueDist(model, mc.cores=mc.cores, gene.num=gene.num, draw.num=draw.num)

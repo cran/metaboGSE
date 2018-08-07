@@ -49,8 +49,14 @@ diagnosticTolerance <- function(model, mc.cores = 2,
     if (mc.cores < 2) {
         stop("mc.cores should be at least 2.")
     }
-    SYBIL_SETTINGS("SOLVER", solver)
-    SYBIL_SETTINGS("METHOD", method)
+    if (SYBIL_SETTINGS("SOLVER") != solver) {
+        SYBIL_SETTINGS("SOLVER", solver)
+        cat("SYBIL_SETTINGS(SOLVER) has been set to", SYBIL_SETTINGS("SOLVER"), "\n")
+    }
+    if (SYBIL_SETTINGS("METHOD") != method) {
+        SYBIL_SETTINGS("METHOD", method)
+        cat("SYBIL_SETTINGS(METHOD) has been set to", SYBIL_SETTINGS("METHOD"), "\n")
+    }
 
     fva     <- suppressMessages(multiDel(model,
                                          nProc=mc.cores,
@@ -119,8 +125,14 @@ rescue <- function(model, target, react = NULL, weight.type = 'r',
     }
 
     options(stringsAsFactors=F)
-    SYBIL_SETTINGS("TOLERANCE",     1e-12)
-    SYBIL_SETTINGS("OPT_DIRECTION", "min")
+    if (SYBIL_SETTINGS("TOLERANCE") != 1e-12) {
+        SYBIL_SETTINGS("TOLERANCE", 1e-12)
+        cat("SYBIL_SETTINGS(TOLERANCE) has been set to", SYBIL_SETTINGS("TOLERANCE"), "\n")
+    }
+    if (SYBIL_SETTINGS("OPT_DIRECTION") != "min") {
+        SYBIL_SETTINGS("OPT_DIRECTION", "min")
+        cat("SYBIL_SETTINGS(OPT_DIRECTION) has been set to", SYBIL_SETTINGS("OPT_DIRECTION"), "\n")
+    }
 
     ##- initialize temporary model
     model.rescue   <- model
@@ -129,13 +141,14 @@ rescue <- function(model, target, react = NULL, weight.type = 'r',
     rownames(smat) <- met_id(model)
     met.obj        <- smat[, obj.ind, drop=F]
     met.obj.ind    <- which(rowSums(abs(met.obj)) != 0)
+    ## not rescue BIOMASS metabolite
     biomass.ind    <- grep(names(met.obj.ind), pattern="BIOMASS|biomass", value=F, perl=T)
     if (length(biomass.ind) > 0)
         met.obj.ind    <- met.obj.ind[-biomass.ind]
     met.comp       <- met_comp(model)
     ref.ind        <- which.max(apply(met.obj[met.obj.ind, , drop=F], 2, function(x) {
         length(which(x != 0))
-    }))                                 # the reaction with most metabolites among obj.ind
+    }))  # the reaction with most metabolites among obj.ind: BIOMASS reaction
 
     ##- add HELP and RECO reactions to metabolites of targeted reactions
     coef <- data.frame(character(), rep(double(), length(obj.ind)), stringsAsFactors=F)
@@ -221,35 +234,34 @@ rescue <- function(model, target, react = NULL, weight.type = 'r',
     }
 
     ##- rescue coefficients of metabolites of targeted reactions
-    coef <- matrix(apply(as.matrix(coef[, -1]), 2, as.numeric),
-                   ncol=length(obj.ind),
-                   dimnames=list(coef[, 1], react_id(model)[obj.ind]))
+    coefs <- matrix(apply(as.matrix(coef[, -1]), 2, as.numeric),
+                    ncol=length(obj.ind),
+                    dimnames=list(coef[, 1], react_id(model)[obj.ind]))
     if (weight.type == 'o') {
-        coef.weight <- rep(1, nrow(coef))
+        coef.weight <- rep(1, nrow(coefs))
     } else {
         if (weight.type == 'r') {
-            coef.weight <- 1/coef
+            coef.weight <- 1/coefs
         } else if (weight.type == 's') {
-            coef.weight <- 1/sqrt(coef)
+            coef.weight <- 1/sqrt(coefs)
         }
         coef.weight <- coef.weight[, react_id(model)[which(obj_coef(model) == 1)], drop=F]
     }
 
     ##- change objective function on RECO reaction fluxes
     model.weight <- changeObjFunc(model.rescue,
-                                  react=rownames(coef),
+                                  react=rownames(coefs),
                                   obj_coef=coef.weight)
     fba          <- optimizeProb(model.weight, algorithm='fba', retOptSol=T)
-
+    ## MILP can be better here!
     if (!checkOptSol(fba, onlywarn=T)) {
         stop("FBA failed.")
     }
-    flux        <- getFluxDist(fba)
-    names(flux) <- react_id(model.weight)
+    wtflux       <- setNames(getFluxDist(fba), react_id(model.weight))
 
     ##- necessary reactions for rescue
-    flux.reco <- flux[rownames(coef)]
-    threshold <- (rescue.threshold * target %*% t(coef))[1, ]
+    flux.reco <- wtflux[rownames(coefs)]
+    threshold <- (rescue.threshold * target %*% t(coefs))[1, ]
     reco.keep <- names(flux.reco)[which(flux.reco > threshold)]
     help.keep <- sub(reco.keep, pattern="RECO", replacement="HELP")
 
@@ -311,9 +323,7 @@ rescue <- function(model, target, react = NULL, weight.type = 'r',
     if (!is.na(prefix.rescued)) {
         modelorg2tsv(model.rescued, prefix=prefix.rescued, quote=F)
     }
-    #cat("OPT_DIRECTION in sybil has been set as min!\n")
-    #cat("TOLERANCE in sybil has been set as 1e-12!\n")
-
+    
     return (list(rescued=model.rescued,
                  rescue=model.rescue,
                  coef=coef.weight))

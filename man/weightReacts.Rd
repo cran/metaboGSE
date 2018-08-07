@@ -16,7 +16,7 @@ weightReacts(model, mc.cores = 1, gene.num = 1, draw.num = 1000)
 \item{draw.num}{The number of random draws. Default: 1000.}
 }
 \value{
-A vector of weights for rescue reactions.
+A vector of weights for rescue reactions and an object of class \code{phylo} for colored plot of fitness weighting schema.
 }
 \description{
 The function weightReacts computes the weights of rescue reactions.

@@ -4,10 +4,8 @@
 #' @param model An object of class \code{modelorg} indicating the weighted \code{rescue} model obtained from the rescue process.
 #' @param condition The experimental condition ID.
 #' @param fitness.random Random-based fitness with weighting scheme.
-#' @param fitness.ranked Ranked-based fitness with weighting scheme.
 #' @param fitness.ranks Ranks-based fitness with weighting scheme.
 #' @param fitness.id.random Random-based fitness without weighting scheme.
-#' @param fitness.id.ranked Ranked-based fitness without weighting scheme.
 #' @param fitness.id.ranks Ranks-based fitness without weighting scheme.
 #' @param ess.gene Percentages of essential genes. The computation of essentiality is deprecated in this version.
 #' @param ess.reaction Percentages of essential reactions. The computation of essentiality is deprecated in this version.
@@ -22,18 +20,16 @@
 #' attributes(yarliSubmnets[[1]])
 #' @export
 scoreGeneDel <- function(model = NULL, condition = NA,
-                         fitness.random = NULL, fitness.ranked = NULL, fitness.ranks = NULL,
-                         fitness.id.random = NULL, fitness.id.ranked = NULL, fitness.id.ranks = NULL,
+                         fitness.random = NULL, fitness.ranks = NULL,
+                         fitness.id.random = NULL,  fitness.id.ranks = NULL,
                          ess.gene = NULL, ess.reaction = NULL, gene.del = NULL, gene.sets = NULL, 
                          ratio.GS = NULL, sub.genes = NULL, sub.reacs = NULL, rescue.met = NULL) {
     res <- list(
         model             = model,
         condition         = condition,
         fitness.random    = fitness.random,
-        fitness.ranked    = fitness.ranked,
         fitness.ranks     = fitness.ranks,
         fitness.id.random = fitness.id.random,
-        fitness.id.ranked = fitness.id.ranked,
         fitness.id.ranks  = fitness.id.ranks,
         ess.gene          = ess.gene,
         ess.reaction      = ess.reaction,
@@ -50,42 +46,42 @@ scoreGeneDel <- function(model = NULL, condition = NA,
 }
 
 
-#' Simulation of gene removal-based submodels
+#' Fitness of gene removal-based submodels with different gene rankings
 #'
-#' This function simulates the construction of submodels by removing genes.
+#' This function computes the fitness of submodels by removing genes in different gene rankings.
 #' @param model An object of class \code{modelorg} indicating the weighted \code{rescue} model obtained from the rescue process.
-#' @param expr A matrix of gene expression in a given condition, with replicate per column.
+#' @param ranks A list of data frames of scores for ranking genes, with gene per row, e.g. data.frame(pkm=pkm expression, rel=relative expression).
 #' @param rescue.weight A vector of rescue reaction weights. Default: NULL, the weights are computed from the given model with gene.num=1.
-#' @param ranks A matrix of score vectors for ranking genes, with gene per row, e.g. cbind(pkm expression, relative expression). Default: NULL.
 #' @param step An integer indicating the step in numbers of genes to remove. Default: 1, gene-by-gene removal. 
 #' When there are many genes in the model, the step is multiplied by an exponent of 2 for later removals. 
 #' This is to reduce the computing time for non-informative sub-models at the end of the series.
 #' @param draw.num Number of random draws. Default: 0.
-#' @param gene.sets Named list of gene sets for gene set enrichment analysis. Default: NULL,
-#' depletion fraction of gene sets should be further computed for gene set enrichment analysis.
-# #' @param essential A logical value indicating whether essentiality analysis will be fulfilled. Default: FALSE.
-#' @param mc.cores The number of cores to use (at least 1), i.e. at most how many child processes will be run simultaneously. Default: 1.
 #' @param obj.react A string indicating objective reaction ID. Default: reaction producing BIOMASS.
+#' @param mc.cores The number of cores to use (at least 1), i.e. at most how many child processes will be run simultaneously. Default: 1.
+# #' @param MILP Logical value indicating whether MILP is used. Default: FALSE.
+# #' @param timeout The maximum time in seconds to allow for MILP call to return. Default: 12.
+# #' @param verboseMode An integer value indicating the amount of output to stdout: 0: nothing, 1: MILP status messages. Default: 0.
 #' @param tol The maximum value to be considered null. Default: \code{SYBIL_SETTINGS("TOLERANCE")}.
 #' @param solver \code{\link{sybil}} solver. Default: \code{SYBIL_SETTINGS("SOLVER")}.
 #' @param method \code{\link{sybil}} method. Default: \code{SYBIL_SETTINGS("METHOD")}.
 #' @return An object of class \code{scoreGeneDel} for the submodel construction simulation.
 #' @import sybil stats
+# #' @importFrom glpkAPI GLP_ON
+# #' @importFrom sys eval_safe
 #' @examples 
 #' data(Ec_core)
 #' mod <- rescue(Ec_core, target=0.1)
 #' mod.weight <- changeObjFunc(mod$rescue, react=rownames(mod$coef), obj_coef=mod$coef)
-#' expr <- matrix(replicate(2, rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4)), 
-#'                ncol=2, 
-#'                dimnames=list(sybil::allGenes(mod.weight), c('rep.1', 'rep.2')))
-#' gene.sets <- list(X1=head(rownames(expr)), X2=tail(rownames(expr)))
-#' sgd <- submnet(model=mod.weight,
-#'                expr=expr, step=200, obj.react="Biomass_Ecoli_core_w_GAM", gene.sets=gene.sets)
+#' ranks <- list(rep.1=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
+#'                                              mean=5, sd=4), sybil::allGenes(mod.weight))),
+#'               rep.2=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
+#'                                              mean=5, sd=4.1), sybil::allGenes(mod.weight))))
+#' fn <- fitness(model=mod.weight, ranks=ranks, step=200, draw.num=1)
 #' @export
-submnet <- function(model, expr, rescue.weight = NULL, ranks = NULL, step = 1, draw.num = 0,
-                    gene.sets = NULL, mc.cores = 1, obj.react = NA, 
+fitness <- function(model, ranks, rescue.weight = NULL, step = 1, draw.num = 0, obj.react = NA,
+                    mc.cores = 1, #MILP = FALSE, timeout = 12, verboseMode = 0,
                     tol = SYBIL_SETTINGS("TOLERANCE"),
-                    solver = SYBIL_SETTINGS("SOLVER"), 
+                    solver = SYBIL_SETTINGS("SOLVER"),
                     method = SYBIL_SETTINGS("METHOD")) {
     ##- settings ----
     if (!is(model, "modelorg")) {
@@ -94,29 +90,53 @@ submnet <- function(model, expr, rescue.weight = NULL, ranks = NULL, step = 1, d
     if (!checkVersion(model)) {
         stop("model is of wrong version!")
     }
-    
-    SYBIL_SETTINGS("SOLVER", solver)
-    SYBIL_SETTINGS("METHOD", method)
-    SYBIL_SETTINGS("OPT_DIRECTION", "min")
-    SYBIL_SETTINGS("TOLERANCE", tol)
+    if (is.null(ranks)) {
+        stop("no rankings are provided!")
+    }
+    if (is.null(names(ranks))) {
+        stop("no names of ranks are found!")
+    }
+    ## MILP <- FALSE
+    ## if (MILP) {
+    ##     if (SYBIL_SETTINGS("SOLVER") != "glpkAPI") {
+    ##         SYBIL_SETTINGS("SOLVER", "glpkAPI")
+    ##         cat("SYBIL_SETTINGS(SOLVER) has been set to", SYBIL_SETTINGS("SOLVER"), "\n")
+    ##     }
+    ## }
+    if (SYBIL_SETTINGS("SOLVER") != solver) {
+        SYBIL_SETTINGS("SOLVER", solver)
+        cat("SYBIL_SETTINGS(SOLVER) has been set to", SYBIL_SETTINGS("SOLVER"), "\n")
+    }
+    if (SYBIL_SETTINGS("METHOD") != method) {
+        SYBIL_SETTINGS("METHOD", method)
+        cat("SYBIL_SETTINGS(METHOD) has been set to", SYBIL_SETTINGS("METHOD"), "\n")
+    }
+    if (SYBIL_SETTINGS("OPT_DIRECTION") != "min") {
+        SYBIL_SETTINGS("OPT_DIRECTION", "min")
+        cat("SYBIL_SETTINGS(OPT_DIRECTION) has been set to", SYBIL_SETTINGS("OPT_DIRECTION"), "\n")
+    }
+    if (SYBIL_SETTINGS("TOLERANCE") != tol) {
+        SYBIL_SETTINGS("TOLERANCE", tol)
+        cat("SYBIL_SETTINGS(TOLERANCE) has been set to", SYBIL_SETTINGS("TOLERANCE"), "\n")
+    }
     options(stringsAsFactors=F)
     RNGkind("L'Ecuyer-CMRG")
     set.seed(1000)
-        
-    reps <- colnames(expr)
-    rep.num <- ncol(expr)
+    
+    reps      <- names(ranks)
+    rep.num   <- length(reps)
     reps.char <- do.call(cbind, strsplit(reps, ''))
     reps.commonend <- min(which(apply(reps.char, 1, function(rc) {length(unique(rc))}) > 1L)) - 1L
     while (!grepl("[a-zA-Z]", reps.char[reps.commonend, 1L])) {
         reps.commonend <- reps.commonend - 1L
     }
     condition <- paste(reps.char[1L:reps.commonend, 1L], collapse='')
-    genes <- rownames(expr)
+    genes     <- rownames(ranks[[1]])
     if (sum(genes != sybil::allGenes(model)) > 0L || 
         (!is.null(ranks) && sum(rownames(ranks[[1]]) != genes) > 0L)) {
         stop("score: genes in model, expr and ranks do not match")
     }
-    gene.num <- length(genes)
+    gene.num  <- length(genes)
     if (gene.num > 1000) {
         gene.num.draw <- c(seq(0L, floor(gene.num/4), step),
                            seq(floor(gene.num/4)+1, floor(gene.num/2), step*2),
@@ -131,30 +151,42 @@ submnet <- function(model, expr, rescue.weight = NULL, ranks = NULL, step = 1, d
     if (is.null(rescue.weight)) {
         rescue.weight <- (weightReacts(model, mc.cores=mc.cores, gene.num=1))$weight
     }
+    if (length(setdiff(names(rescue.weight), react_id(model))) > 0) {
+        stop("names of rescue.weight not found in react_id(model)!")
+    }
     mc.cores2 <- max(1L, as.integer(floor(mc.cores/length(gene.num.draw))))
     mc.cores1 <- max(1L, as.integer(floor(mc.cores/mc.cores2)))
-    reactions <- react_id(model)
-    reac.num  <- react_num(model)
-    recos     <- grep('RECO', reactions, perl=T, value=T)
+    recos     <- grep('RECO', react_id(model), perl=T, value=T)
     draw.lim  <- gene.num
     draw.num  <- as.integer(draw.num)
-    iter.fba  <- 40
-    essential <- F
-    if (is.null(gene.sets)) {
-        warning("gene.sets is NULL, depletion fraction of gene sets should be further computed for gene set enrichment analysis.")
-    }
-    # metric.ranked        <- apply(expr, 1, mean)
-    # names(metric.ranked) <- genes
-    # metric.ranked.sort   <- sort(metric.ranked, decreasing=F)
     ##-----
     
     ##- initial fba
-    fba.weight <- optimizeProb(model, algorithm="fba", poCmd=list("getFluxDist"), retOptSol=T)
-
+    fba.weight <- optimizeProb(model, algorithm="fba", retOptSol=T, lpdir='min')
+    if (!checkOptSol(fba.weight, onlywarn=T)) stop("cannot perform FBA for input model!")
+    wtflux     <- getFluxDist(fba.weight)
+    if (is.na(obj.react)) {
+	if (length(grep("biomass", tolower(met_id(model)), value=F)) > 0)
+            obj.react <- react_id(model)[which(S(model)[grep("biomass",
+                                                         tolower(met_id(model)),
+                                                         value=F), ]
+                                           > 0)]
+	else
+            obj.react <- react_id(model)[grep("biomass", tolower(react_id(model)))]
+    }
+    if (length(obj.react) < 1) {
+        stop("cannot determine obj.react producing BIOMASS!")	
+    } else if (length(obj.react) > 1) {
+	stop("too many obj.react producing BIOMASS!")
+    } else if (uppbnd(model)[which(react_id(model)==obj.react)]-lowbnd(model)[which(react_id(model)==obj.react)] > tol) {
+        stop("obj.react does not have a fixed flux!")
+    } else {
+        obj.fixed <- uppbnd(model)[which(react_id(model)==obj.react)]
+    }
     ##- compute scores for different types of gene removal ----
     recoscores <- mclapply(1L:length(gene.num.draw), mc.cores=mc.cores1, mc.set.seed=T, function(i) {
         draw.num1 <- 1L
-        
+      
         ##- draw based on ranks, only once ----
         draw.ranks <- NULL
         if (!is.null(ranks)) {
@@ -202,50 +234,7 @@ submnet <- function(model, expr, rescue.weight = NULL, ranks = NULL, step = 1, d
             })
         }
         ##-----
-        
-        ##- draw based on ranked expr, only once ----
-        draw.ranked <- mclapply(1L:rep.num, mc.cores=mc.cores2, function(k) {
-            rank        <- expr[, k, drop=T]
-            names(rank) <- rownames(expr)
-            rank.sort   <- sort(rank, decreasing=F)
-            draw.rank   <- matrix(0L, nrow=gene.num, ncol=draw.num1)
-            if (draw.lim < gene.num.draw[i]) {
-                ##- draw the first 'draw.lim' genes of lowest expression and
-                ##- 'gene.num.draw[i] - draw.lim' random genes
-                if (gene.num.draw[i] > 0L) {
-                    draw1rowindex <- matrix(
-                        replicate(draw.num1,
-                                  which(genes %in%
-                                            names(rank.sort)[
-                                                c(1L:draw.lim,
-                                                  sample((draw.lim+1L):gene.num,
-                                                         gene.num.draw[i]-draw.lim,
-                                                         replace=F))])),
-                        ncol=draw.num1)
-                } else {
-                    draw1rowindex <- matrix(0L, nrow=0L, ncol=draw.num1)
-                }
-            } else {
-                ##- draw the first 'gene.num.draw[i]' genes of lowest expression
-                if (gene.num.draw[i] > 0L) {
-                    draw1rowindex <- matrix(
-                        replicate(draw.num1,
-                                  which(genes %in%
-                                            names(rank.sort)[1L:gene.num.draw[i]])),
-                        ncol=draw.num1)
-                } else {
-                    draw1rowindex <- matrix(0L, nrow=0L, ncol=draw.num1)
-                }
-            }
-            draw.rank <- sapply(1L:draw.num1, function(j) {
-                draw.rank[draw1rowindex[, j], j] <- 1L
-                return (draw.rank[, j])
-            })
-            
-            return (draw.rank)
-        })
-        ##-----
-        
+                
         ##- draw randomly, 'draw.num' times ----
         draw.random <- matrix(0L, nrow=gene.num, ncol=draw.num)
         if (draw.num > 0L) {
@@ -269,11 +258,6 @@ submnet <- function(model, expr, rescue.weight = NULL, ranks = NULL, step = 1, d
 
         ##- combine draws into list ----
         draw.list <- c(lapply(apply(draw.random, 2, list), unlist),
-                       unlist(lapply(draw.ranked,
-                                     function(x) {
-                                         lapply(apply(x,2,list), unlist)
-                                     }),
-                              recursive=F),
                        unlist(lapply(draw.ranks, function(dr) {
                            sapply(dr, function(x) {
                                lapply(apply(x,2,list), unlist)
@@ -285,44 +269,176 @@ submnet <- function(model, expr, rescue.weight = NULL, ranks = NULL, step = 1, d
         genes.del.param <- mclapply(draw.list, mc.cores=mc.cores2, function(x) {
             genes[which(as.numeric(x) == 1L)]
         })
-        geneDel.num <- gene.num.draw[i]
+        names(genes.del.param) <- c(if (draw.num > 0) paste0("random.", 1L:draw.num) else NULL,
+                                    sapply(1L:length(ranks), function(r) {
+                                        paste0(colnames(ranks[[r]]), '.', names(ranks)[r])}))
+        gene.del <- gene.num.draw[i]
         ##-----
-        
-        ##- delete genes ----
-        gd.param <- mclapply(genes.del.param, mc.cores=mc.cores2, function(x) {
-            if (length(x) == 0) {
-                return (fba.weight)
-            }
-            gd <- suppressMessages(geneDeletion(model, x, combinations=length(x),
-                                                lb=NULL, ub=NULL,
-                                                poCmd=list("getFluxDist"), verboseMode=1))
-            if (checkOptSol(gd, onlywarn=T)) {
-                return (gd)
-            }
-            return (NaN)
-        })
-        ##-----
-        
-        ##- then obtain the corresponding fluxes ----
-        fluxmat.param <- matrix(
-            unlist(
-                lapply(
-                    mclapply(gd.param, mc.cores=mc.cores2, function(x) {
-                        if (is(x, "optsol_genedel") || is(x, "optsol_optimizeProb")) {
-                            return (postProc(x))
-                        }
-                        return (NaN)
-                    }),
-                    function(y) {
-                        if (is(y, "ppProc")) {
-                            return (sybil::pa(y))
-                        }
-                        return (list(list(rep(NaN, reac.num))))
-                    }),
-                use.names=F),
-            ncol=length(reactions), byrow=T)
-        colnames(fluxmat.param) <- reactions
-        ##-----
+
+        ## if (!MILP) {
+            ##< FBA LP 0
+            fluxlist.param <- mclapply(genes.del.param, mc.cores=1, function(x) {
+                if (length(x)==0) x <- NULL
+                obj.coef <- setNames(obj_coef(model), react_id(model))
+                obj.coef.reco <- obj.coef[names(rescue.weight)]/obj.fixed*rescue.weight
+                fba.x <- optimizeProb(changeObjFunc(model,
+                                                    react=names(obj.coef.reco),
+                                                    obj_coef=obj.coef.reco),
+                                      gene=x, lb=0, ub=0,
+                                      algorithm="fba",
+                                      lpdir="min")
+                if (checkOptSol(fba.x, onlywarn=T)) {                      
+                    return (list(flux=setNames(getFluxDist(fba.x), react_id(model)),
+                                 obj=lp_obj(fba.x)))
+                }
+                return (list(flux=setNames(rep(NaN, react_num(model)), react_id(model)),
+                             obj=NaN))
+            })
+            fluxmat.param <- do.call(rbind, mclapply(fluxlist.param, mc.cores=mc.cores2, function(flp) {
+                flp$flux
+            }))
+            ##>
+            
+            ## ##< FBA LP 1
+            ## fluxmat.param <- do.call(rbind, mclapply(genes.del.param, mc.cores=1, function(x) {
+            ##     if (length(x)==0) x <- NULL
+            ##     fba.x <- optimizeProb(model,
+            ##                           gene=x, lb=0, ub=0,
+            ##                           algorithm="fba",
+            ##                           lpdir="min")
+            ##     if (checkOptSol(fba.x, onlywarn=T)) {                      
+            ##     	return (setNames(getFluxDist(fba.x), react_id(model)))
+            ##     }
+            ##     return (setNames(rep(NaN, react_num(model)), react_id(model)))
+            ## }))
+            ## ##>
+            
+            ## ##< FBA LP 2
+            ## ##- delete genes ----
+            ## gd.param <- mclapply(genes.del.param, mc.cores=mc.cores2, function(x) {
+            ##     if (length(x) == 0) {
+            ##         return (fba.weight)
+            ##     }
+            ##     gd <- suppressMessages(geneDeletion(model, x, combinations=length(x),
+            ##                                         lb=NULL, ub=NULL,
+            ##                                         poCmd=list("getFluxDist"), verboseMode=1))
+            ##     if (checkOptSol(gd, onlywarn=T)) {
+            ##         return (gd)
+            ##     }
+            ##     return (NaN)
+            ## })
+            ## ##-----
+            
+            ## ##- then obtain the corresponding fluxes ----
+            ## fluxmat.param <- matrix(
+            ##     unlist(
+            ##         lapply(
+            ##             mclapply(gd.param, mc.cores=mc.cores2, function(x) {
+            ##                 if (is(x, "optsol_genedel") || is(x, "optsol_optimizeProb")) {
+            ##                     return (postProc(x))
+            ##                 }
+            ##                 return (NaN)
+            ##             }),
+            ##             function(y) {
+            ##                 if (is(y, "ppProc")) {
+            ##                     return (sybil::pa(y))
+            ##                 }
+            ##                 return (list(list(rep(NaN, reac.num))))
+            ##             }),
+            ##         use.names=F),
+            ##     ncol=length(reactions), byrow=T)
+            ## colnames(fluxmat.param) <- reactions
+            ## ##-----
+            ## ##>
+        ## } else {      
+        ## ##< MILP
+        ##     fluxlist.param <- mclapply(1L:length(genes.del.param), mc.cores=mc.cores2, function(j) {
+        ##         x <- genes.del.param[[j]]
+        ##                                 #print(paste("gene", gene.del, j))
+        ##         if (length(x) == 0) {
+        ##             return (list(flux=setNames(wtflux, react_id(model)),
+        ##                          obj=lp_obj(fba.weight)))
+        ##         } else {
+        ##             fba.x <- optimizeProb(model,
+        ##                                   gene=x, lb=0, ub=0,
+        ##                                   algorithm="fba",
+        ##                                   lpdir="min", retOptSol=TRUE)
+        ##             if (!checkOptSol(fba.x, onlywarn=T)) {
+        ##                 return (list(flux=setNames(rep(NaN, react_num(model)), react_id(model)),
+        ##                              obj=NA))
+        ##             }
+        ##             mip <- tryCatch(
+        ##                 sys::eval_safe(
+        ##                     suppressWarnings(suppressMessages(
+        ##                         optimizeProb(
+        ##                             model, algorithm='room',
+        ##                             wtflux=wtflux,
+        ##                             gene=x, lb=0, ub=0,
+        ##                             minRescue=lp_obj(fba.x) + 0.001,
+        ##                             rescueWeight=rescue.weight,
+        ##                             solverParm=list(PRESOLVE=glpkAPI::GLP_ON),
+        ##                                 #delta=0, epsilon=0,
+        ##                             LPvariant=F))),
+        ##                     timeout=timeout),
+                        ## error=function(e1) {
+                        ##     print(paste0("first-attempt error catched: ", condition, ", gene.del: ", length(x), ", draw: ", j, ", trying delta=0, epsilon=0.01"))
+                        ##     mip <- tryCatch(
+                        ##         sys::eval_safe(suppressWarnings(suppressMessages(
+                        ##             optimizeProb(
+                        ##                 model, algorithm='room',
+                        ##                 wtflux=wtflux,
+                        ##                 gene=x, lb=0, ub=0,
+                        ##                 minRescue=lp_obj(fba.x) + 0.01,
+                        ##                 solverParm=list(PRESOLVE=glpkAPI::GLP_ON),
+                        ##                 delta=0, epsilon=0, LPvariant=F))),
+                        ##                   timeout=timeout),
+                        ##         error=function(e2) {
+                        ##             print(paste0("second-attempt error catched: ", condition, ", gene.del: ", length(x), ", draw: ", j, ", trying delta=0.01, epsilon=0.01"))
+                        ##             mip <- tryCatch(
+                        ##                 sys::eval_safe(suppressWarnings(suppressMessages(
+                        ##                     optimizeProb(
+                        ##                         model, algorithm='room',
+                        ##                         wtflux=wtflux,
+                        ##                         gene=x, lb=0, ub=0,
+                        ##                         minRescue=lp_obj(fba.x)*1.01 + 0.01,
+                        ##                         solverParm=list(PRESOLVE=glpkAPI::GLP_ON),
+                        ##                         delta=0, epsilon=0, LPvariant=F))),
+                        ##                           timeout=timeout),
+        ##                 error=function(e3) {
+        ##                     if (verboseMode > 0) 
+        ##                         print(paste0("MILP-attempt error catched: ", condition, ", gene.del: ", length(x), ", draw: ", j, ", trying with LPvariant"))
+        ##                     mip <- tryCatch(
+        ##                         sys::eval_safe(
+        ##                             suppressWarnings(suppressMessages(
+        ##                                 optimizeProb(
+        ##                                     model, algorithm='room',
+        ##                                     wtflux=wtflux,
+        ##                                     gene=x, lb=0, ub=0,
+        ##                                     minRescue=lp_obj(fba.x) + 0.001,
+        ##                                     rescueWeight=rescue.weight,
+        ##                                     solverParm=list(PRESOLVE=glpkAPI::GLP_ON),
+        ##                                     delta=0, epsilon=0,
+        ##                                     LPvariant=T))),
+        ##                             timeout=timeout),
+        ##                         error=function(e4) {
+        ##                             if (verboseMode > 0) 
+        ##                                 print("MILP LPvariant failed. NULL is returned.")
+        ##                             mip <- NULL
+        ##                         })
+        ##                 })
+                    
+        ##             if (!is.null(mip) && suppressWarnings(checkOptSol(mip, onlywarn=T))) {
+        ##                 return (list(flux=setNames(getFluxDist(mip), react_id(model)),
+        ##                              obj=lp_obj(mip)))
+        ##             }
+        ##             return (list(flux=setNames(rep(NaN, react_num(model)), react_id(model)),
+        ##                          obj=NA))
+        ##         }
+        ##     })
+        ##     fluxmat.param <- do.call(rbind, mclapply(fluxlist.param, mc.cores=mc.cores2, function(flp) {
+        ##         flp$flux
+        ##     }))
+        ## }
         
         ##- fluxes of RECO reactions ----
         recoflux.param <- fluxmat.param[, recos, drop=F]
@@ -339,53 +455,214 @@ submnet <- function(model, expr, rescue.weight = NULL, ranks = NULL, step = 1, d
         
         ##- computing the model fitness ----
         #- with reaction weights
-        fitness <- c(recoexist.param %*% rescue.weight)
+        ## fitness    <- setNames(c(recoexist.param %*% rescue.weight),
+        ##                        c(if (draw.num > 0) paste0("F.random.",   1L:draw.num) else NULL,
+        ##                          sapply(reps, function(reps.i) {
+        ##                              paste("F",    colnames(ranks[[1]]), reps.i, sep='.')
+        ##                          })))       
+        fitness <- setNames(unlist(mclapply(fluxlist.param, mc.cores=mc.cores2, function(flp) {
+            flp$obj
+        })), c(if (draw.num > 0) paste0("F.random.",   1L:draw.num) else NULL,
+               sapply(reps, function(reps.i) {
+                   paste("F",    colnames(ranks[[1]]), reps.i, sep='.')
+               })))
+        
         #- without reaction weights
-        fitness.id <- c(recoexist.param %*% rep(1/length(rescue.weight), length(rescue.weight)))
+        fitness.id <- setNames(c(recoexist.param %*% rep(1/length(rescue.weight), length(rescue.weight))),
+                               c(if (draw.num > 0) paste0("F.id.random.", 1L:draw.num) else NULL,
+                                 sapply(reps, function(reps.i) {
+                                     paste("F.id", colnames(ranks[[1]]), reps.i, sep='.')
+                                 })))
         ##-----
-        
-        ##- get initial obj.react ----
-        if (is.na(obj.react[1])) {
-            obj.react <- react_id(model)[which(S(model)[grep("BIOMASS",
-                                                             met_id(model),
-                                                             value=F), ]
-                                               > 0)]
-        } else if (!is.character(obj.react)) {
-            stop("argument obj.react must be character!")
+
+        return (list(score=c(
+                         ifelse(1 - fitness > 0,    1 - fitness,    0),
+                         ifelse(1 - fitness.id > 0, 1 - fitness.id, 0),
+                         if (draw.num > 0) apply(recoexist.param[1L:draw.num, , drop=F], 2, mean) else
+                         apply(recoexist.param[1, , drop=F], 2, mean)),
+                     gene.del=gene.del,
+                     genes.del=genes.del.param,
+                     ranks.name=colnames(ranks[[1]]),
+                     draw.num=draw.num
+                     )
+                )
+    })
+    return (recoscores)
+}
+
+
+#' Identify the best ranking
+#'
+#' This function computes the performance indices of different rankings compared to the random ranking for gene removal and identify the best ranking
+#' @param fns List of fitness objects.
+#' @return The performance indices for all rankings and the best ranking.
+#' @examples
+#' data(Ec_core)
+#' mod <- rescue(Ec_core, target=0.1)
+#' mod.weight <- changeObjFunc(mod$rescue, react=rownames(mod$coef), obj_coef=mod$coef)
+#' ranks <- list(rep.1=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
+#'                                              mean=5, sd=4), sybil::allGenes(mod.weight))),
+#'               rep.2=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
+#'                                              mean=5, sd=4.1), sybil::allGenes(mod.weight))))
+#' fn <- fitness(model=mod.weight, ranks=ranks, step=200, draw.num=1)
+#' bestRanking(list(fn))
+#' @export
+bestRanking <- function(fns) {
+    ranks.name <- fns[[1]][[1]]$ranks.name
+    perfIndex <- do.call(cbind, mclapply(fns, mc.cores=length(fns), function(fn) {
+        param.num <- length(fn)
+        reps <- gsub(grep(paste0("F.",ranks.name[1], "."), names(fn[[1]]$score), value=T, fixed=T),
+                     pattern=paste0("F\\.",ranks.name[1], "\\."), replacement='', perl=T) 
+        draw.num <- fn[[1]]$draw.num
+        if (draw.num == 0) {
+            weights <- rep(1/param.num, param.num)
+        } else {
+            F.random.means <- sapply(1L:length(fn), function(k) {
+                mean(fn[[k]]$score[paste0("F.random.", 1L:draw.num)])
+            })
+            weights <- F.random.means/sum(F.random.means)
         }
-        ##-----
+        ##- percentages of random draws better (i.e. higher fitness) than ranked draws ----
+        r2random <- do.call(cbind, lapply(reps, function(rep) {
+            ranks2random <- sapply(ranks.name, function(rn) {
+                100 * sum(sapply(1L:length(fn), function(k) {
+                    sum(fn[[k]]$score[paste0("F.", rn, '.', rep)] < fn[[k]]$score[paste0("F.random.", 1L:fn[[k]]$draw.num)]) / draw.num * weights[k] 
+                }))
+            })
+            return (setNames(ranks2random, ranks.name))
+        }))
+	colnames(r2random) <- reps
+        return (r2random)
+    }))
+    return (list(perfIndex=perfIndex,
+                 rank.best=ranks.name[as.numeric(names(which.max(table(apply(perfIndex, 2, which.min)))))]))
+}
+
+
+#' Simulation of gene removal-based submodel series with a given ranking
+#'
+#' This function simulates the construction of a series of submodels by removing genes in a given ranking.
+#' @param model An object of class \code{modelorg} indicating the weighted \code{rescue} model obtained from the rescue process.
+#' @param fn An object returned by the fitness function.
+#' @param rank.best Name of a ranking among simulated ones. Default: "expr".
+#' @param gene.sets Named list of gene sets for gene set enrichment analysis. Default: NULL,
+#' depletion fraction of gene sets should be further computed for gene set enrichment analysis.
+# #' @param essential A logical value indicating whether essentiality analysis will be fulfilled. Default: FALSE.
+#' @param mc.cores The number of cores to use (at least 1), i.e. at most how many child processes will be run simultaneously. Default: 1.
+#' @param obj.react A string indicating objective reaction ID. Default: reaction producing BIOMASS.
+#' @param tol The maximum value to be considered null. Default: \code{SYBIL_SETTINGS("TOLERANCE")}.
+#' @return An object of class \code{scoreGeneDel} for the submodel construction simulation.
+#' @import sybil stats
+#' @examples 
+#' data(Ec_core)
+#' mod <- rescue(Ec_core, target=0.1)
+#' mod.weight <- changeObjFunc(mod$rescue, react=rownames(mod$coef), obj_coef=mod$coef)
+#' ranks <- list(rep.1=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
+#'                                              mean=5, sd=4), sybil::allGenes(mod.weight))),
+#'               rep.2=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
+#'                                              mean=5, sd=4.1), sybil::allGenes(mod.weight))))
+#' fn <- fitness(model=mod.weight, ranks=ranks, step=200, draw.num=1)
+#' gene.sets <- list(X1=head(sybil::allGenes(mod.weight)), X2=tail(sybil::allGenes(mod.weight)))
+#' sgd <- submnet(model=mod.weight, fn=fn, rank.best="expr",
+#'                obj.react="Biomass_Ecoli_core_w_GAM", gene.sets=gene.sets)
+#' @export
+submnet <- function(model, fn, rank.best = "expr",
+                    gene.sets = NULL, mc.cores = 1, obj.react = NA,
+                    tol = SYBIL_SETTINGS("TOLERANCE")) {
+    ##- settings ----
+    if (!is(model, "modelorg")) {
+        stop("needs an object of class modelorg!")
+    }
+    if (!checkVersion(model)) {
+        stop("model is of wrong version!")
+    }
+
+    if (SYBIL_SETTINGS("OPT_DIRECTION") != "min") {
+        SYBIL_SETTINGS("OPT_DIRECTION", "min")
+        cat("SYBIL_SETTINGS(OPT_DIRECTION) has been set to", SYBIL_SETTINGS("OPT_DIRECTION"), "\n")
+    }
+    if (SYBIL_SETTINGS("TOLERANCE") != tol) {
+        SYBIL_SETTINGS("TOLERANCE", tol)
+        cat("SYBIL_SETTINGS(TOLERANCE) has been set to", SYBIL_SETTINGS("TOLERANCE"), "\n")
+    }
+    options(stringsAsFactors=F)
+
+    rank.best.id <- grep(paste0("^", rank.best, "\\."), names(fn[[1]]$genes.del), value=T, perl=T)
+    genes.del <- mclapply(fn, mc.cores=mc.cores, function(fni) {
+        fni$genes.del[rank.best.id]
+    })
+    reps <- gsub(rank.best.id, pattern=paste0(rank.best, "\\."), replacement='', perl=T)
+    rep.num <- length(reps)
+    reps.char <- do.call(cbind, strsplit(reps, ''))
+    reps.commonend <- min(which(apply(reps.char, 1, function(rc) {length(unique(rc))}) > 1L)) - 1L
+    while (!grepl("[a-zA-Z]", reps.char[reps.commonend, 1L])) {
+        reps.commonend <- reps.commonend - 1L
+    }
+    condition <- paste(reps.char[1L:reps.commonend, 1L], collapse='')
+    mc.cores2   <- max(1L, as.integer(floor(mc.cores/length(fn))))
+    mc.cores1   <- max(1L, as.integer(floor(mc.cores/mc.cores2)))
+    recos       <- grep('^RECO', react_id(model), perl=T, value=T)
+    iter.fba    <- 40
+    essential   <- F
+    if (is.null(gene.sets)) {
+        warning("gene.sets is NULL, depletion fraction of gene sets should be further computed for gene set enrichment analysis.")
+    }
+    ##-----
         
+    ##- get initial obj.react ----
+    if (is.na(obj.react)) {
+	if (length(grep("biomass", tolower(met_id(model)), value=F)) > 0)
+            obj.react <- react_id(model)[which(S(model)[grep("biomass",
+                                                         tolower(met_id(model)),
+                                                         value=F), ]
+                                           > 0)]
+	else 
+	    obj.react <- react_id(model)[grep("biomass", tolower(react_id(model)))]
+    } else if (!is.character(obj.react)) {
+        stop("argument obj.react must be character!")
+    }
+    if (length(obj.react) < 1) {
+        stop("cannot determine obj.react producing BIOMASS!")
+    } else if (length(obj.react) > 1) {
+        stop("too many obj.react producing BIOMASS!")
+    }
+
+    ##-----
+
+    recoscores <- mclapply(1L:length(fn), mc.cores=mc.cores1, function(i) {
         ##- submodels for each replicate ----
-        ratios.GS <- lapply(1L:rep.num, function(j) {
+        ratios.GS <- mclapply(1L:rep.num, mc.cores=1, function(j) {
             ratio.GS <- NULL
             esg <- character(0)
             esr <- character(0)
             
-            ##- build a submodel while removing genes.del.param[[draw.num+j]] 'ranked' genes
-            submod <- rmGenes(model = model,
-                              genes = genes.del.param[[draw.num+j]])
+            ##- build a submodel while removing genes.del[[i]][[j]] genes
+            submod <- rmGenes(model=model,
+                              genes=genes.del[[i]][[j]])
 
-            ##- fva should not be performed with objective on RECOs since RECOs would be blocked
-            ##- reset the objective function to the initial (BIOMASS by default) before fva
+            ##- build the submodel by propagation ----
             if (suppressWarnings(checkOptSol(optimizeProb(submod, algorithm="fba", retOptSol=T),
                                              onlywarn=T))) {
-                ##- submodel after propagation ----
                 submod.fd.1 <- obj.react
                 submod.fd.0 <- setdiff(react_id(submod), submod.fd.1)
                 CONTINUE <- T
                 iter <- 0
+                ##- the sequential FBAs are used to identify reactions with a non-null flux, then
+                ##- unnecessary to perform FVA on them
                 while (CONTINUE && iter < iter.fba) {
-                    submod.obj <- changeObjFunc(submod, 
-                                                react=submod.fd.1,
-                                                obj_coef=rep(1, length(submod.fd.1)))
-                    submod.fd <- setNames(getFluxDist(optimizeProb(submod.obj, algorithm="fba", 
-                                                                   lpdir="min", retOptSol=T)), 
-                                          react_id(submod.obj))
+                    submod.obj  <- changeObjFunc(submod, 
+                                                 react=submod.fd.1,
+                                                 obj_coef=rep(1, length(submod.fd.1)))
+                    submod.fd   <- setNames(getFluxDist(optimizeProb(submod.obj, algorithm="fba", 
+                                                                     lpdir="min", retOptSol=T)), 
+                                            react_id(submod.obj))
                     submod.fd.1 <- union(submod.fd.1, names(submod.fd[abs(submod.fd) >= 1e-4]))
-                    CONTINUE <- (length(intersect(submod.fd.0, submod.fd.1)) > 0)
+                    CONTINUE    <- (length(intersect(submod.fd.0, submod.fd.1)) > 0)
                     submod.fd.0 <- setdiff(submod.fd.0, submod.fd.1)
-                    iter <- iter + 1
+                    iter        <- iter + 1
                 }
+                ##- FVA should not be performed with objective on RECOs since RECOs would be blocked
+                ##- reset the objective function to the initial (BIOMASS by default) before FVA
                 submod.obj <- changeObjFunc(submod, react=obj.react, obj_coef=1)
                 if (mc.cores2 > 2) {
                     subfva.obj <- suppressMessages(multiDel(submod.obj,
@@ -544,23 +821,21 @@ submnet <- function(model, expr, rescue.weight = NULL, ranks = NULL, step = 1, d
         }), reps)
         esgs <- setNames(mclapply(ratios.GS, mc.cores=mc.cores2, function(rgs) {
             rgs$esg
-        }), reps)
+        }), paste0("esg.", reps))
         esrs <- setNames(mclapply(ratios.GS, mc.cores=mc.cores2, function(rgs) {
             rgs$esr
-        }), reps)
-        ratios.GS <- mclapply(ratios.GS, mc.cores=mc.cores2, function(rgs) {
+        }), paste0("esr.", reps))
+        ratios.GS <- setNames(mclapply(ratios.GS, mc.cores=mc.cores2, function(rgs) {
             unlist(rgs[-c(length(rgs)-3L:0L)])
-        })
+        }), paste0("gs.", reps))
         ##-----
 
-        return (list(score=c(ifelse(1 - fitness > 0,    1 - fitness,    0),
-                             ifelse(1 - fitness.id > 0, 1 - fitness.id, 0),
-                             sapply(esgs, length)/length(sybil::allGenes(model)),
-                             sapply(esrs, length)/react_num(model),
-                             geneDel.num,
-                             unlist(ratios.GS),
-                             if (draw.num > 0) apply(recoexist.param[1L:draw.num, , drop=F], 2, mean) else
-                                 apply(recoexist.param[1, , drop=F], 2, mean)),
+        return (list(score=c(
+                         fn[[i]]$score,
+                         sapply(esgs, length)/length(sybil::allGenes(model)),
+                         sapply(esrs, length)/react_num(model),
+                         gene.del=fn[[i]]$gene.del,
+                         unlist(ratios.GS)),
                      genes.sub=genes.sub,
                      reacs.sub=reacs.sub))
     })
@@ -573,100 +848,113 @@ submnet <- function(model, expr, rescue.weight = NULL, ranks = NULL, step = 1, d
     recoscore <- do.call(cbind, mclapply(recoscores, mc.cores=mc.cores1, function(rcs) {
         rcs$score
     }))
+    colnames(recoscore) <- recoscore["gene.del", , drop=T]
     ##-----
-    
-    ranks.num <- if (!is.null(ranks)) ncol(ranks[[1]]) else 0
-    GS.num <- length(gene.sets)
+
+    ranks.name <- union(rank.best, fn[[1]]$ranks.name) # move the best ranking to the first one
+    ranks.num  <- length(ranks.name)
+    draw.num   <- fn[[1]]$draw.num
+    GS.num     <- length(gene.sets)
     res <- scoreGeneDel(
         model             = model,
         condition         = condition,
-        fitness.random    = recoscore[if (draw.num > 0L) 1L:draw.num else numeric(0), , drop=F],
-        fitness.ranked    = matrix(recoscore[(draw.num+1L:rep.num), , drop=F], nrow=rep.num, 
-                                   dimnames=list(reps, NULL)),
-        fitness.ranks     = if (!is.null(ranks))
-            setNames(lapply(1L:rep.num, function(j) {
-                matrix(recoscore[(draw.num+rep.num+(j-1L)*ranks.num+1:ranks.num), , drop=F],
-                       nrow=ranks.num,
-                       dimnames=list(colnames(ranks[[1]]), NULL))
-            }), reps) else NULL,
-        fitness.id.random = recoscore[if (draw.num > 0L) (draw.num+rep.num+rep.num*ranks.num)+1L:draw.num else
-            numeric(0), , drop=F],
-        fitness.id.ranked = matrix(recoscore[(2L*draw.num+rep.num+rep.num*ranks.num+1L:rep.num), , drop=F], nrow=rep.num,
-                                   dimnames=list(reps, NULL)),
-        fitness.id.ranks  = if (!is.null(ranks))
-            setNames(lapply(1L:rep.num, function(j) {
-                matrix(recoscore[(2L*draw.num+2L*rep.num+rep.num*ranks.num+(j-1L)*ranks.num+1:ranks.num), , drop=F],
-                       nrow=ranks.num,
-                       dimnames=list(colnames(ranks[[1]]), NULL))
-            }), reps) else NULL,
-        ess.gene          = recoscore[2L*(draw.num+rep.num+rep.num*ranks.num)+1L:rep.num, , drop=F],
-        ess.reaction      = recoscore[2L*(draw.num+rep.num+rep.num*ranks.num)+1L:rep.num+rep.num, , drop=F],
-        gene.del          = recoscore[2L*(draw.num+2L*rep.num+rep.num*ranks.num)+1L, , drop=F],
+        fitness.random    = recoscore[grep("^F.random", rownames(recoscore)), , drop=F],
+        fitness.ranks     = setNames(lapply(1L:rep.num, function(j) {
+            rsj <- recoscore[paste("F", ranks.name, reps[j], sep='.'), , drop=F]
+            rownames(rsj) <- ranks.name
+            return (rsj)
+        }), reps),
+        fitness.id.random = recoscore[grep("^F.id.random", rownames(recoscore)), , drop=F],
+        fitness.id.ranks  = setNames(lapply(1L:rep.num, function(j) {
+            rsj <- recoscore[paste("F.id", ranks.name, reps[j], sep='.'), , drop=F]
+            rownames(rsj) <- ranks.name
+            return (rsj)
+        }), reps),
+        ess.gene          = recoscore[grep("^esg", rownames(recoscore)), , drop=F],
+        ess.reaction      = recoscore[grep("^esr", rownames(recoscore)), , drop=F],
+        gene.del          = recoscore["gene.del", , drop=F],
         gene.sets         = gene.sets,
         ratio.GS          = setNames(lapply(1L:rep.num, function(j) {
-            rgsj <- recoscore[2L*(draw.num+2*rep.num+rep.num*ranks.num)+1L+(j-1L)*GS.num+1L:GS.num, , drop=F]
+            rgsj <- recoscore[paste("gs", reps[j], names(gene.sets), sep='.'), , drop=F]
             rownames(rgsj) <- names(gene.sets)
             return (rgsj)
         }), reps),
         sub.genes         = sub.genes,
         sub.reacs         = sub.reacs,
-        rescue.met        = recoscore[(2L*(draw.num+2L*rep.num+rep.num*ranks.num)+1L+GS.num*rep.num+1L):
-            nrow(recoscore), , drop=F]
-    )
-
+        rescue.met        = recoscore[recos, , drop=F]
+        )
     return (res)
 }
 
 
-#' Assess submodels built by gene removal in a condition
+#' Plot fitness of submodels built by gene removal in a condition
 #'
-#' This function computes the significance levels of different rankings compared to the random ranking for gene removal in a condition.
+#' This function plots the fitness of submodels built by gene removal in a condition with different rankings.
 #' @param sgd An object of class \code{scoreGeneDel}.
 #' @param mc.cores The number of cores to use (at least 1), i.e. at most how many child processes will be run simultaneously. Default: 1.
+#' @param ranks.name Names of gene expression ranking. Default: NULL.
 #' @param njt An object of class \code{phylo} for colored plot of fitness weighting schema resulting from \code{weightReacts}. Default: NULL.
+#' @param cols Colors for conditions. Default: rainbow colors.
+#' @param ltys Line types for conditions. Default: incrementing line types in R.
 # #' @param cutoff A numeric value for the cutoff of gene removal. 
 # #' If \code{cutoff} <= 1, apply on removal fitness scores; if \code{cutoff} > 1, apply on number of removed genes. 
 # #' Default: NA, \code{cutoff} at fitness^opt.degree/remaining_genes peak.
 # #' @param opt.percentage The minimum percentage of genes to remove, used when \code{cutoff = NA}. Default: 10\%.
 # #' @param opt.degree A numeric value for the power of optimization score, used when \code{cutoff = NA}. Default: 2.
-#' @return The significance levels
 #' @import sybil grDevices graphics
 #' @examples
 #' data(yarliSubmnets)
 #' simulateSubmnet(yarliSubmnets$DN)
 #' @export
-simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
+simulateSubmnet <- function(sgd, mc.cores = 1, ranks.name = NULL, njt = NULL, cols = NULL, ltys = NULL) {
     ##- settings ----
     draw.num   <- nrow(sgd$fitness.random)
     if (draw.num < 1L) return (0)
     gene.num   <- length(sybil::allGenes(sgd$model))
     gene.del   <- as.vector(sgd$gene.del)
     param.num  <- length(gene.del)
-    cond.num   <- 1L
-    rep.num    <- nrow(sgd$fitness.ranked)
+    rep.num    <- length(sgd$fitness.ranks)
     legend.pos <- "topright"
-    col.names  <- c("random", "expr", rownames(sgd$fitness.ranks[[1]]))
+    if (is.null(ranks.name)) {
+        ranks.name  <- rownames(sgd$fitness.ranks[[1]])
+    }
+    ranks.name <- c("random", ranks.name)
     condition  <- sgd$condition
     misc.plot  <- F
     cutoff     <- gene.num*0.1 
     opt.percentage <- 0.1
     opt.degree <- 2
+    if (length(cols) == 0) {
+        cols         <- c("black", rainbow(nrow(sgd$fitness.ranks[[1]])))
+        if (length(cols) == 8L) {
+            cols[3]  <- "darkorange1"
+            cols[4]  <- "gold3"
+        }
+    }
+    if (length(cols) != nrow(sgd$fitness.ranks[[1]])+1) {
+        stop("Number of colors does not match number of conditions.")
+    }
+    if (length(ltys) == 0) {
+        ltys         <- c(4, 1, rep(5, nrow(sgd$fitness.ranks[[1]])-1))
+    }
+    if (length(ltys) != nrow(sgd$fitness.ranks[[1]])+1) {
+        stop("Number of line types does not match number of conditions.")
+    }
+
     ##-----
     
     ##- average fitness in random and ranks draws ----
     fitness.means <- mclapply(1L:rep.num, mc.cores=mc.cores, function(i) {
-        fitness.mean <- cbind(apply(sgd$fitness.random, 2, function(x) {mean(na.omit(x))}),
-                              sgd$fitness.ranked[i,],
-                              t(sgd$fitness.ranks[[i]]))
-        colnames(fitness.mean) <- col.names
+        fitness.mean    <- cbind(apply(sgd$fitness.random, 2, function(x) {mean(na.omit(x))}),
+                                 t(sgd$fitness.ranks[[i]]))
+        colnames(fitness.mean) <- ranks.name
         rownames(fitness.mean) <- gene.del
         return (fitness.mean)
     })
     fitness.id.means <- mclapply(1L:rep.num, mc.cores=mc.cores, function(i) {
-        fitness.id.mean    <- cbind(apply(sgd$fitness.id.random, 2, function(x) {mean(na.omit(x))}),
-                                 sgd$fitness.id.ranked[i,],
+        fitness.id.mean <- cbind(apply(sgd$fitness.id.random, 2, function(x) {mean(na.omit(x))}),
                                  t(sgd$fitness.id.ranks[[i]]))
-        colnames(fitness.id.mean) <- col.names
+        colnames(fitness.id.mean) <- ranks.name
         rownames(fitness.id.mean) <- gene.del
         return (fitness.id.mean)
     })
@@ -699,7 +987,7 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
     #                                                   2,
     #                                                   function(x) {mean(na.omit(x))})
     #                                         })), ncol=length(sgd$fitness.ranks), byrow=F))
-    # colnames(ratio.mat) <- col.names
+    # colnames(ratio.mat) <- expr.names
     # ##-----
     
     ##- percentages of random draws better (i.e. higher fitness) than ranked draws ----
@@ -709,27 +997,17 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
         weights <- apply(sgd$fitness.random, 2, mean) / sum(apply(sgd$fitness.random, 2, mean))
     }
     r2random <- lapply(1L:rep.num, function(i) {
-        ranked2random <- 100 * sum(sapply(1L:param.num, function(k) {
-            sum(sgd$fitness.ranked[i, k] < sgd$fitness.random[, k]) / draw.num * weights[k]
-        }))
         ranks2random  <- apply(sgd$fitness.ranks[[i]], 1, function(x) {
             100 * sum(sapply(1L:param.num, function(k) {
                     sum(x[k] < sgd$fitness.random[, k, drop=T]) / draw.num * weights[k]
                 }))
         })
-        return (setNames(c(100, ranked2random, ranks2random), col.names))
+        return (setNames(c(100, ranks2random), ranks.name))
     })
     ##-----
 
     ##- make figures ----
     colors.light <- rep(0.4, 3)
-    ltys         <- c(4, 1, rep(5, length(r2random[[1]])-2L))
-    names(ltys)  <- col.names
-    cols         <- c("black", rainbow(length(r2random[[1]])-1))
-    if (length(cols) == 8L) {
-        cols[3]  <- "darkorange1"
-        cols[4]  <- "gold3"
-    }
     ##- coordinates for two-percentile plots ----
     pbs <- c(20, 80)
     pbs.coords <- sapply(1L:length(pbs), function(k) {
@@ -748,11 +1026,11 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
     })
     
     ##- rows ~ #removed genes
-    ##- 2*cond.num first columns ~ cond.num x (xcoords, ycoords) of pbs[1]
-    ##- 2*cond.num last columns  ~ cond.num x (xcoords, ycoords) of pbs[2]
-    pbs.coords <- matrix(pbs.coords, ncol=2L*length(pbs)*cond.num)
+    ##- 2 first columns ~ (xcoords, ycoords) of pbs[1]
+    ##- 2 last columns  ~ (xcoords, ycoords) of pbs[2]
+    pbs.coords <- matrix(pbs.coords, ncol=2L*length(pbs))
     rownames(pbs.coords) <- gene.del
-    pbs.id.coords <- matrix(pbs.id.coords, ncol=2L*length(pbs)*cond.num)
+    pbs.id.coords <- matrix(pbs.id.coords, ncol=2L*length(pbs))
     rownames(pbs.id.coords) <- gene.del
     ##-----
     
@@ -763,7 +1041,7 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
     cex.leg    <- 1.8
     line.lab   <- 3
     cex.panel  <- 2.8
-    at.panel   <- -65
+    at.panel   <- -55
     line.panel <- -2
     invisible(sapply(1L:rep.num, function(i) {
         par(mar=c(0.1,0.1,0.5,0.5), oma=c(4.5,4.5,0,0))
@@ -774,14 +1052,15 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
                       xlab     = "",
                       ylab     = "",
                       cex.axis = cex.axis,
+                      col      = cols[1],
                       ylim     = c(0, 1))
         matpoints(gene.del, fitness.means[[i]],
                   type = 'l',
                   lwd  = 2,
                   lty  = ltys,
                   col  = cols)
-        lines(polygon(c(pbs.coords[, 1], rev(pbs.coords[, 1+2*cond.num])),
-                      c(pbs.coords[, 2], rev(pbs.coords[, 2+2*cond.num])),
+        lines(polygon(c(pbs.coords[, 1], rev(pbs.coords[, 1+2])),
+                      c(pbs.coords[, 2], rev(pbs.coords[, 2+2])),
                       col    = rgb(colors.light[1], colors.light[2], colors.light[3], 0.5),
                       border = NA)
         )
@@ -833,14 +1112,15 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
                       xlab     = "",
                       ylab     = "",
                       cex.axis = cex.axis,
+                      col      = cols[1],
                       ylim     = c(0, 1))
         matpoints(gene.del, fitness.means[[1]][,1],
                   type = 'l',
                   lwd  = 2,
                   lty  = ltys,
                   col  = cols)
-        lines(polygon(c(pbs.coords[, 1], rev(pbs.coords[, 1+2*cond.num])),
-                      c(pbs.coords[, 2], rev(pbs.coords[, 2+2*cond.num])),
+        lines(polygon(c(pbs.coords[, 1], rev(pbs.coords[, 1+2])),
+                      c(pbs.coords[, 2], rev(pbs.coords[, 2+2])),
                       col    = rgb(colors.light[1], colors.light[2], colors.light[3], 0.5),
                       border = NA)
         )
@@ -880,10 +1160,11 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
                   1-as.vector(sgd$fitness.id.random),
                   #main    = bquote(list("Without weighting scheme", bar(sigma) == .(fitness.id.sd.mean))),
                   #colramp = colorRampPalette(c("white", "blue", "red")),
-                  xlab    = "",
-                  ylab    = "",
-                  xaxt    = "n",
+                  xlab     = "",
+                  ylab     = "",
+                  xaxt     = "n",
                   cex.axis = cex.axis,
+                  col      = cols[1],
                   ylim     = c(0, 1))
     mtext("A", side=3, line=line.panel, outer=F, at=at.panel, cex=cex.panel, font=2)
     mtext("fraction of rescued reactions", side=2, line=line.lab, outer=F, cex=cex.lab)
@@ -894,8 +1175,8 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
            lwd  = 2,
            lty  = 1,
            col  = 1)
-    lines(polygon(c(pbs.id.coords[, 1], rev(pbs.id.coords[, 1+2*cond.num])),
-                  c(pbs.id.coords[, 2], rev(pbs.id.coords[, 2+2*cond.num])),
+    lines(polygon(c(pbs.id.coords[, 1], rev(pbs.id.coords[, 1+2])),
+                  c(pbs.id.coords[, 2], rev(pbs.id.coords[, 2+2])),
                   col    = rgb(colors.light[1], colors.light[2], colors.light[3], 0.5),
                   border = NA)
     )
@@ -920,8 +1201,8 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
     #        lwd  = 2,
     #        lty  = 1,
     #        col  = 1)
-    # lines(polygon(c(pbs.coords[, 1], rev(pbs.coords[, 1+2*cond.num])),
-    #               c(pbs.coords[, 2], rev(pbs.coords[, 2+2*cond.num])),
+    # lines(polygon(c(pbs.coords[, 1], rev(pbs.coords[, 1+2])),
+    #               c(pbs.coords[, 2], rev(pbs.coords[, 2+2])),
     #               col    = rgb(colors.light[1], colors.light[2], colors.light[3], 0.5),
     #               border = NA)
     # )
@@ -941,20 +1222,7 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
              pattern="L-", replacement="")
     })
     colors.met <- rainbow(length(metplot)+5, s=1, v=0.7, alpha=1)
-    
-    # colors.met[grep("P$", rescue.met.name)] <- "steelblue1"
-    # colors.met[c("alanine", "arginine", "asparagine", "aspartate", "cysteine",
-    #              "glutamine", "glutamate", "glycine", "histidine", "isoleucine",
-    #              "leucine", "lysine", "methionine", "phenylalanine", "proline",
-    #              "serine", "threonine", "tryptophan", "tyrosine", "valine")] <- "forestgreen"
-    # colors.met[c("phenylalanine", "tryptophan", "tyrosine")] <- "white"
-    # colors.met[c("alanine", "methionine", "lysine")] <- "gray60"
-    # colors.met[grep("^[Pp]hosphat", rescue.met.name, perl=T)] <- "yellowgreen"
-    # colors.met["H2O"] <- "black"
-    # colors.met["H(+)"] <- "gray80"
-    # colors.met["ergosterol"] <- "darkmagenta"
-    # colors.met["sulfate"] <- "orange"
-    
+        
     ##- sort curve at 50% rescue to create colors red->violet from left to right
     rescuedhalf <- apply(sgd$rescue.met, 1, function(met) {
         min(c(length(met), which(met > 0.5)))
@@ -967,8 +1235,6 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
     ss <- apply(sgd$rescue.met[metplot, , drop=F], 1, function(met) {
         smooth.spline(gene.del, met)
     })
-    # matplot(genesDel.mean,
-    #         t(sgd$rescue.met[metplot, , drop=F]),
     matplot(matrix(unlist(lapply(ss, function(s) s$x)), ncol=length(ss)),
             matrix(unlist(lapply(ss, function(s) s$y)), ncol=length(ss)),
             type = "l",
@@ -1049,7 +1315,7 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
     } else {
         if (cutoff > 1) {               # cut on number of genes
             genedel <- lapply(1L:rep.num, function(i) {
-                setNames(rep(floor(cutoff), ncol(fitness.means[[i]])), col.names)
+                setNames(rep(floor(cutoff), ncol(fitness.means[[i]])), ranks.name)
             })
         } else {                        # cut on fitness
             genedel <- lapply(1L:rep.num, function(i) {
@@ -1061,10 +1327,7 @@ simulateSubmnet <- function(sgd, mc.cores = 1, njt = NULL) {
     }
     ##-----
 
-    ## return (list(
-    ##     measure=r2random, 
-    ##     genedel=genedel))
-    return (list(measure=r2random))
+    return (NULL)
 }
 
 

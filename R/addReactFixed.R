@@ -75,9 +75,9 @@ addReactFixed <- function (model, id, met, Scoef, reversible = FALSE, lb = 0,
         newuppbnd <- uppbnd(model)
         newobj_coef <- obj_coef(model)
         newgprRules <- gprRules(model)
-        newgenes <- genes(model)
+        newgenes <- sybil::genes(model)
         newgpr <- gpr(model)
-        newallGenes <- allGenes(model)
+        newallGenes <- sybil::allGenes(model)
         newrxnGeneMat <- rxnGeneMat(model)
         newsubSys <- subSys(model)
         newS <- S(model)
@@ -166,16 +166,16 @@ addReactFixed <- function (model, id, met, Scoef, reversible = FALSE, lb = 0,
             if ((is.na(gprAssoc)) || (gprAssoc == "")) {
                 if ((length(gprRules(model)) > 0)) {
                   newgprRules <- append(gprRules(model), "")
-                  newgenes <- append(genes(model), "")
+                  newgenes <- append(sybil::genes(model), "")
                   newgpr <- append(gpr(model), "")
                 }
             }
             else {
                 gene_rule <- parseBooleanCopy(gprAssoc)
-                geneInd <- match(gene_rule$gene, allGenes(model))
+                geneInd <- match(gene_rule$gene, sybil::allGenes(model))
                 new_gene <- which(is.na(geneInd))
                 if (length(new_gene) > 0) {
-                  newallGenes <- append(allGenes(model), gene_rule[["gene"]][new_gene])
+                  newallGenes <- append(sybil::allGenes(model), gene_rule[["gene"]][new_gene])
                   geneInd <- match(gene_rule[["gene"]], newallGenes)
                   if (ncol(newrxnGeneMat) == 0) {
                     newrxnGeneMat <- Matrix::Matrix(FALSE, nCols, 
@@ -190,7 +190,7 @@ addReactFixed <- function (model, id, met, Scoef, reversible = FALSE, lb = 0,
                 }
                 newrxnGeneMat[nCols, geneInd] <- TRUE
                 newgpr <- append(gpr(model), gprAssoc)
-                newgenes <- append(genes(model), list(gene_rule$gene))
+                newgenes <- append(sybil::genes(model), list(gene_rule$gene))
                 newrule <- gene_rule$rule
                 newgprRules <- append(gprRules(model), newrule)
             }
@@ -228,9 +228,9 @@ addReactFixed <- function (model, id, met, Scoef, reversible = FALSE, lb = 0,
         uppbnd(mod_out) <- newuppbnd
         obj_coef(mod_out) <- newobj_coef
         gprRules(mod_out) <- newgprRules
-        genes(mod_out) <- newgenes
+        sybil::genes(mod_out) <- newgenes
         gpr(mod_out) <- newgpr
-        allGenes(mod_out) <- newallGenes
+        sybil::allGenes(mod_out) <- newallGenes
         rxnGeneMat(mod_out) <- newrxnGeneMat
         subSys(mod_out) <- newsubSys
         S(mod_out) <- newS

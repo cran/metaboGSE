@@ -5,10 +5,9 @@
 \title{Structure of Class "scoreGeneDel"}
 \usage{
 scoreGeneDel(model = NULL, condition = NA, fitness.random = NULL,
-  fitness.ranked = NULL, fitness.ranks = NULL, fitness.id.random = NULL,
-  fitness.id.ranked = NULL, fitness.id.ranks = NULL, ess.gene = NULL,
-  ess.reaction = NULL, gene.del = NULL, gene.sets = NULL,
-  ratio.GS = NULL, sub.genes = NULL, sub.reacs = NULL,
+  fitness.ranks = NULL, fitness.id.random = NULL, fitness.id.ranks = NULL,
+  ess.gene = NULL, ess.reaction = NULL, gene.del = NULL,
+  gene.sets = NULL, ratio.GS = NULL, sub.genes = NULL, sub.reacs = NULL,
   rescue.met = NULL)
 }
 \arguments{
@@ -18,13 +17,9 @@ scoreGeneDel(model = NULL, condition = NA, fitness.random = NULL,
 
 \item{fitness.random}{Random-based fitness with weighting scheme.}
 
-\item{fitness.ranked}{Ranked-based fitness with weighting scheme.}
-
 \item{fitness.ranks}{Ranks-based fitness with weighting scheme.}
 
 \item{fitness.id.random}{Random-based fitness without weighting scheme.}
-
-\item{fitness.id.ranked}{Ranked-based fitness without weighting scheme.}
 
 \item{fitness.id.ranks}{Ranks-based fitness without weighting scheme.}
 

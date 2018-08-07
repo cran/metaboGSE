@@ -4,14 +4,15 @@
 \alias{metaboGSE}
 \title{Gene set enrichment analysis}
 \usage{
-metaboGSE(scores, geneset.ID = NULL, method = "perm", test = NA,
+metaboGSE(scores, gene.sets = NULL, method = "perm", test = NA,
   nperm = 1000, nrand = 1000, mc.cores = 1, posthoc = TRUE,
-  contrast = FALSE, prefix = "sub", desc.data = NULL)
+  contrast = FALSE, prefix = "sub", desc.data = NULL, cols = NULL,
+  ltys = NULL)
 }
 \arguments{
 \item{scores}{A list of \code{scoreGeneDel} objects.}
 
-\item{geneset.ID}{A character vector of gene set IDs. Default: all from \code{scores}.}
+\item{gene.sets}{A named list of gene sets for gene set enrichment analysis, or a vector of gene set IDs computed in \code{scores}. Default: NULL, all gene sets from \code{scores}.}
 
 \item{method}{Statistical testing method \code{c("perm", "survival")}. Default: \code{"perm"}. \code{"survial"} may be used for exploration.}
 
@@ -30,7 +31,11 @@ metaboGSE(scores, geneset.ID = NULL, method = "perm", test = NA,
 \item{prefix}{A string indicating prefix of output files. Default: "sub".}
 
 \item{desc.data}{A vector of descriptions of a priori KEGG pathway IDs. Default: NULL,
-KEGGREST will be called with internet connection required if geneset.ID is KEGG pathway ID.}
+KEGGREST will be called with internet connection required if gene.sets is KEGG pathway.}
+
+\item{cols}{Colors for conditions. Default: rainbow colors.}
+
+\item{ltys}{Line types for conditions. Default: incrementing line types in R.}
 }
 \value{
 Gene set enrichment information
@@ -40,5 +45,5 @@ This function performs the gene set enrichment analysis.
 }
 \examples{
 data(yarliSubmnets)
-metaboGSE(yarliSubmnets[c('SH','SN')], geneset.ID = "GO:0006696", method="perm", nperm=10, nrand=10)
+metaboGSE(yarliSubmnets[c('SH','SN')], gene.sets = "GO:0006696", method="perm", nperm=10, nrand=10)
 }

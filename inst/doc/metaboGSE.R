@@ -4,8 +4,8 @@ knitr::opts_knit$set(root.dir = normalizePath('..'))
 
 ## ---- eval=TRUE, message=FALSE, warning=FALSE----------------------------
 library(metaboGSE)
-SYBIL_SETTINGS("SOLVER", "clpAPI")
-SYBIL_SETTINGS("METHOD", "inibarrier")
+SYBIL_SETTINGS("SOLVER", "glpkAPI")
+SYBIL_SETTINGS("METHOD", "simplex")
 SYBIL_SETTINGS("OPT_DIRECTION", "max")
 
 ## ---- eval=TRUE, message=FALSE, warning=FALSE----------------------------
@@ -72,7 +72,6 @@ rescue.weight <- (weightReacts(hmodel.weight, mc.cores=mc.cores, gene.num=1))$we
 str(rescue.weight, vec.len=2)
 
 ## ---- eval=TRUE, message=FALSE, warning=FALSE----------------------------
-library(topGO)
 GO2geneID <- inverseList(yarli2GO)
 length(GO2geneID)
 str(head(GO2geneID), vec.len=3)
@@ -111,55 +110,58 @@ str(head(GO2geneID.interest), vec.len=3)
 cond <- "UH"
 step <- 50
 draw.num <- 4
-reps.i <- grep(cond, colnames(exprMaguire$expr))
+reps.i <- grep(cond, colnames(exprMaguire$expr), value=T)
 ranks <- mclapply(reps.i, mc.cores=mc.cores, function(ri) {
     data.frame(
-         # ranks1. pkm normalized expression
-         pkmExpr  = exprMaguire$pkmExpr[, ri, drop=T], 
-         # ranks2. relative expression power 1
-         relExpr1 = relativeExpr(exprMaguire$expr, power=1)[, ri, drop=T], 
-         # ranks3. relative expression power 2
-         relExpr2 = relativeExpr(exprMaguire$expr, power=2)[, ri, drop=T],  
-         # ranks4. relative expression power 3
-         relExpr3 = relativeExpr(exprMaguire$expr, power=3)[, ri, drop=T], 
-         # ranks5. reverse expression (the worst)
-         revExpr  = 1/(1 + exprMaguire$expr[, ri, drop=T]),                 
-         # ranks6. z-score expression
-         zExpr    = zscoreExpr(exprMaguire$expr)[, ri, drop=T]              
-	 )
-    })
-submnetsUH <- submnet(model         = hmodel.weight,
-                      expr          = exprMaguire$expr[, reps.i, drop=F],
-                      ranks         = ranks,
-                      rescue.weight = rescue.weight,
-                      step          = step,
-                      draw.num      = draw.num,
-                      gene.sets     = GO2geneID.interest,
-                      mc.cores      = mc.cores)
+        # ranks1. voom-normalized expression
+        expr = exprMaguire$expr[, ri, drop=T],
+        # ranks2. pkm normalized expression
+        pkmExpr  = exprMaguire$pkmExpr[, ri, drop=T], 
+        # ranks3. relative expression power 1
+        relExpr1 = relativeExpr(exprMaguire$expr, power=1)[, ri, drop=T], 
+        # ranks4. relative expression power 2
+        relExpr2 = relativeExpr(exprMaguire$expr, power=2)[, ri, drop=T],  
+        # ranks5. relative expression power 3
+        relExpr3 = relativeExpr(exprMaguire$expr, power=3)[, ri, drop=T], 
+        # ranks6. reverse expression (the worst)
+        revExpr  = 1/(1 + exprMaguire$expr[, ri, drop=T]),                 
+        # ranks7. z-score expression
+        zExpr    = zscoreExpr(exprMaguire$expr)[, ri, drop=T]              
+        )
+})
+names(ranks) <- reps.i
+fitnessUH <- fitness(model         = hmodel.weight,
+                     ranks         = ranks,
+                     rescue.weight = rescue.weight,
+                     step          = step,
+                     draw.num      = draw.num,
+                     mc.cores      = mc.cores)
+submnetsUH <- submnet(model        = hmodel.weight,
+                      fn           = fitnessUH,
+                      rank.best    = "expr",
+                      gene.sets    = GO2geneID.interest,
+                      mc.cores     = mc.cores)
 
 ## ---- eval=TRUE, warnings=FALSE------------------------------------------
 submnetsUH$condition
 knitr::kable(submnetsUH$gene.del)
 knitr::kable(submnetsUH$fitness.random, digits=3)
-knitr::kable(submnetsUH$fitness.ranked, digits=3)
 knitr::kable(submnetsUH$fitness.ranks$UH1, digits=3)
 
 ## ---- eval=TRUE----------------------------------------------------------
 data(yarliSubmnets)
 str(yarliSubmnets$UH$gene.del)
 dim(yarliSubmnets$UH$fitness.random)
-str(yarliSubmnets$UH$fitness.ranked)
 str(yarliSubmnets$UH$fitness.ranks)
 
 ## ---- eval=FALSE---------------------------------------------------------
-#  simulateSubmnet(model    = hmodel.weight,
-#                  sgd      = submnetsUH,
+#  simulateSubmnet(sgd      = submnetsUH,
 #                  mc.cores = mc.cores)
 
 ## ---- eval=FALSE, message=FALSE------------------------------------------
 #  ## not run
 #  GSE <- metaboGSE(yarliSubmnets, method="perm", nperm=1000, nrand=1000,
-#                         mc.cores=mc.cores, prefix="/tmp/summary")
+#                   mc.cores=mc.cores, prefix="/tmp/summary")
 #  ##
 
 ## ---- eval=TRUE, message=FALSE-------------------------------------------

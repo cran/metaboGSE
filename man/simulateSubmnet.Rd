@@ -2,22 +2,26 @@
 % Please edit documentation in R/submnet.R
 \name{simulateSubmnet}
 \alias{simulateSubmnet}
-\title{Assess submodels built by gene removal in a condition}
+\title{Plot fitness of submodels built by gene removal in a condition}
 \usage{
-simulateSubmnet(sgd, mc.cores = 1, njt = NULL)
+simulateSubmnet(sgd, mc.cores = 1, ranks.name = NULL, njt = NULL,
+  cols = NULL, ltys = NULL)
 }
 \arguments{
 \item{sgd}{An object of class \code{scoreGeneDel}.}
 
 \item{mc.cores}{The number of cores to use (at least 1), i.e. at most how many child processes will be run simultaneously. Default: 1.}
 
+\item{ranks.name}{Names of gene expression ranking. Default: NULL.}
+
 \item{njt}{An object of class \code{phylo} for colored plot of fitness weighting schema resulting from \code{weightReacts}. Default: NULL.}
-}
-\value{
-The significance levels
+
+\item{cols}{Colors for conditions. Default: rainbow colors.}
+
+\item{ltys}{Line types for conditions. Default: incrementing line types in R.}
 }
 \description{
-This function computes the significance levels of different rankings compared to the random ranking for gene removal in a condition.
+This function plots the fitness of submodels built by gene removal in a condition with different rankings.
 }
 \examples{
 data(yarliSubmnets)

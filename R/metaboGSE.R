@@ -124,7 +124,7 @@ maxArea <- function(y, x = NULL) {
 #' This function performs the gene set enrichment analysis.
 #' @param scores A list of \code{scoreGeneDel} objects.
 # #' @param expr A matrix of expression data (log2 counts), with gene per row and experiment per column.
-#' @param geneset.ID A character vector of gene set IDs. Default: all from \code{scores}.
+#' @param gene.sets A named list of gene sets for gene set enrichment analysis, or a vector of gene set IDs computed in \code{scores}. Default: NULL, all gene sets from \code{scores}.
 #' @param method Statistical testing method \code{c("perm", "survival")}. Default: \code{"perm"}. \code{"survial"} may be used for exploration.
 #' @param test Type of test c(\code{"likelihood", "logrank", "wald"}), when method = \code{"survival"}. Default: \code{"likelihood"}.
 #' @param nperm Number of permutations for testing, when method = \code{"perm"}. Default: 10000.
@@ -134,17 +134,20 @@ maxArea <- function(y, x = NULL) {
 #' @param contrast A logical value indicating if the Newick-based contrast will be computed. Default: FALSE.
 #' @param prefix A string indicating prefix of output files. Default: "sub".
 #' @param desc.data A vector of descriptions of a priori KEGG pathway IDs. Default: NULL,
-#' KEGGREST will be called with internet connection required if geneset.ID is KEGG pathway ID.
+#' KEGGREST will be called with internet connection required if gene.sets is KEGG pathway.
+#' @param cols Colors for conditions. Default: rainbow colors.
+#' @param ltys Line types for conditions. Default: incrementing line types in R.
 #' @return Gene set enrichment information
 #' @import AnnotationDbi grDevices graphics
 #' @importFrom utils combn
 #' @examples
 #' data(yarliSubmnets)
-#' metaboGSE(yarliSubmnets[c('SH','SN')], geneset.ID = "GO:0006696", method="perm", nperm=10, nrand=10)
+#' metaboGSE(yarliSubmnets[c('SH','SN')], gene.sets = "GO:0006696", method="perm", nperm=10, nrand=10)
 #' @export
-metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
+metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                       nperm = 1000, nrand = 1000, mc.cores = 1,
-                      posthoc = TRUE, contrast = FALSE, prefix = "sub", desc.data = NULL) {
+                      posthoc = TRUE, contrast = FALSE, prefix = "sub", desc.data = NULL,
+                      cols = NULL, ltys = NULL) {
     ##- settings ----
     ties         <- mean
     conds        <- unlist(lapply(scores, function(sgd) sgd$condition), use.names=F)
@@ -158,13 +161,23 @@ metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
         ncombi   <- factorial(samples.num)/(prod(sapply(sample.num, factorial))*prod(sapply(table(sample.num), factorial)))
         ncombi2  <- ncombi*factorial(samples.num)/prod(sapply(sample.num, factorial)) - factorial(cond.num) + 1
     }
-    cols         <- c(rainbow(cond.num))
-    if (length(cols) == 7L) {
-        cols[2]  <- "darkorange1"
-        cols[3]  <- "gold3"
+    if (length(cols) == 0) {
+        cols         <- c(rainbow(cond.num))
+        if (length(cols) == 7L) {
+            cols[2]  <- "darkorange1"
+            cols[3]  <- "gold3"
+        }
+    }
+    if (length(cols) != cond.num) {
+        stop("Number of colors does not match number of conditions.")
     }
     cols.rep     <- rep(cols, times=sapply(samples, length))
-    ltys         <- 1L:cond.num
+    if (length(ltys) == 0) {
+        ltys         <- 1L:cond.num
+    }
+    if (length(ltys) != cond.num) {
+        stop("Number of line types does not match number of conditions.")
+    }
     ltys.rep     <- rep(ltys, times=sapply(samples, length))
     cex.lab      <- 2.2
     cex.leg      <- 2.5
@@ -197,125 +210,23 @@ metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
     set.seed(1000)
     ##-----
     
-    ##- plot fitness, essentiality, expression versus #removed genes ----
-    if (FALSE) {
-        pdf(file=paste(prefix, "fitness.pdf", sep='_'), width=10, height=12)
-        par(mfrow=c(3, 2), mar=c(1,7,0.3,1), oma=c(6,1,3,0.5), xpd=NA)
-        
-        matplot(matrix(rep(gene.del, cond.num), ncol=cond.num),
-                t(do.call(rbind, lapply(1L:cond.num,
-                                        function(i) {
-                                            sapply(gene.del, function(x) {
-                                                if (x==0) 0 
-                                                else
-                                                    max(sort(expr[, grep(conds[i], colnames(expr))[1]])[1L:x])
-                                            })
-                                        }))),
-                xlab = "",
-                ylab = "",
-                xaxt = 'n',
-                cex.lab = cex.lab,
-                type = 'l',
-                lwd  = 2,
-                lty  = c(1L:cond.num),
-                cex.axis = cex.axis,
-                col  = cols)
-        mtext("A", side=3, line=line.panel, outer=F, at=at.panel, cex=cex.panel, font=2)
-        mtext("expr", side=2, line=line.lab, outer=F, cex=cex.lab)
-        #abline(v=63, xpd=T)
-        matplot(matrix(rep(gene.del, cond.num), ncol=cond.num),
-                t(do.call(rbind, lapply(scores, function(x) {x$fitness.ranked[1,]}))),
-                xlab = "",
-                ylab = "",
-                xaxt = 'n',
-                cex.lab = cex.lab,
-                ylim = c(0, 1),
-                type = 'l',
-                lwd  = 2,
-                lty  = c(1L:cond.num),
-                cex.axis = cex.axis,
-                col  = cols)
-        mtext("B", side=3, line=line.panel, outer=F, at=at.panel, cex=cex.panel, font=2)
-        mtext("fitness", side=2, line=line.lab, outer=F, cex=cex.lab)
-        #abline(v=63, xpd=T)
-        legend("topright", conds, lty=c(1L:cond.num), lwd=2, col=cols, cex=cex.leg)
-        matplot(matrix(rep(gene.del, cond.num), ncol=cond.num),
-                t(do.call(rbind, 
-                          lapply(scores, 
-                                 function(x) {
-                                     lapply(x$sub.genes, function(x) {length(x[[1]])})}))),
-                #mean(sapply(x, length))})}))),
-                xlab = "",
-                ylab = "",
-                xaxt = 'n',
-                cex.lab = cex.lab,
-                type = 'l',
-                lwd  = 2,
-                lty  = c(1L:cond.num),
-                cex.axis = cex.axis,
-                col  = cols)
-        mtext("C", side=3, line=line.panel, outer=F, at=at.panel, cex=cex.panel, font=2)
-        mtext("#genes", side=2, line=line.lab, outer=F, cex=cex.lab)
-        #abline(v=63, xpd=T)
-        matplot(matrix(rep(gene.del, cond.num), ncol=cond.num),
-                t(do.call(rbind, lapply(scores, 
-                                        function(x) {lapply(x$sub.reacs, function(x) {length(x[[1]])})}))),
-                #mean(sapply(x, length))})}))),
-                xlab = "",
-                ylab = "",
-                xaxt = 'n',
-                cex.lab = cex.lab,
-                type = 'l',
-                lwd  = 2,
-                lty  = c(1L:cond.num),
-                cex.axis = cex.axis,
-                col  = cols)
-        mtext("D", side=3, line=line.panel, outer=F, at=at.panel, cex=cex.panel, font=2)
-        mtext("#reactions", side=2, line=line.lab, outer=F, cex=cex.lab)
-        #abline(v=63, xpd=T)
-        matplot(matrix(rep(gene.del, cond.num), ncol=cond.num),
-                t(do.call(rbind, lapply(scores, function(x) {x$ess.gene[1,]})))*100,
-                xlab = "",
-                ylab = "",
-                type = 'l',
-                lwd  = 2,
-                lty  = c(1L:cond.num),
-                cex.axis = cex.axis,
-                col  = cols)
-        mtext("E", side=3, line=line.panel, outer=F, at=at.panel, cex=cex.panel, font=2)
-        mtext("%ess. genes", side=2, line=line.lab, outer=F, cex=cex.lab)
-        #abline(v=63, xpd=T)
-        mtext("#removed genes", side=1, line=line.lab, cex=cex.lab)
-        matplot(matrix(rep(gene.del, cond.num), ncol=cond.num),
-                t(do.call(rbind, lapply(scores, function(x) {x$ess.reaction[1,]})))*100,
-                xlab = "",
-                ylab = "",
-                #xaxt = 'n',
-                cex.lab = cex.lab,
-                type = 'l',
-                lwd  = 2,
-                lty  = c(1L:cond.num),
-                cex.axis = cex.axis,
-                col  = cols)
-        mtext("F", side=3, line=line.panel, outer=F, at=at.panel, cex=cex.panel, font=2)
-        mtext("%ess. reactions", side=2, line=line.lab, outer=F, cex=cex.lab)
-        mtext("#removed genes", side=1, line=line.lab, cex=cex.lab)
-        #abline(v=63, xpd=T)
-        
-        invisible(dev.off())
-        ##-----
-    }
-    
     ##- gene set enrichment ----
-    if (is.null(geneset.ID)) {
-        geneset.ID <- names(scores[[1L]]$gene.sets)
+    if (is.null(gene.sets)) {
+        gene.sets <- scores[[1L]]$gene.sets
+    } else if (is.character(gene.sets)) {
+        gene.sets <- scores[[1L]]$gene.sets[gene.sets]
     }
-    
+    if (1 %in% lengths(gene.sets)) {
+        warning("gene set of length 1 will be ignored!")
+    }
+    gene.sets <- gene.sets[lengths(gene.sets) > 1]
     fitness.ranked <- t(do.call(rbind, mclapply(scores, mc.cores=mc.cores, function(sgd) {
-        sgd$fitness.ranked
+        do.call(rbind, lapply(sgd$fitness.ranks, function(fn) {
+            fn[1,]
+        }))
     })))
     fitness.ranked.pcg <- fitness.ranked * (1-gene.del/max(gene.del))
-    GS.ulen <- sort(unique(sapply(scores[[1L]]$gene.sets, length)))
+    GS.ulen <- c(3:50) #sort(unique(sapply(c(scores[[1L]]$gene.sets, gene.sets), length)))
     
     if (method == "perm") {
         ##- AUCs created by random gene set of size GS.ulen
@@ -346,13 +257,22 @@ metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
         
         mc.cores1 <- floor(sqrt(mc.cores))
         mc.cores2 <- floor(mc.cores/mc.cores1)
-        GS.metric <- mclapply(geneset.ID, mc.cores=mc.cores1, function(gs) {
-            i <- match(gs, names(scores[[1L]]$gene.sets))
+        GS.metric <- mclapply(1L:length(gene.sets), mc.cores=mc.cores1, function(j) {
+            gs <- names(gene.sets)[j]
+            i  <- match(gs, names(scores[[1L]]$gene.sets))
             ##- degradation of gs w.r.t #removed genes
             gs.fracs <- do.call(cbind, mclapply(scores, mc.cores=mc.cores2, function(sgd) {
-                gs.frac <- sapply(sgd$ratio.GS, function(rgs.rep) {
-                    rgs.rep[gs, , drop=F]
-                }, USE.NAMES=T)
+                if (is.na(i)) {
+                    gs.frac <- t(sapply(sgd$sub.genes, function(sgdsg) {
+                        sapply(sgdsg, function(sg) {
+                            length(intersect(gene.sets[[j]], sg)) / length(gene.sets[[j]])
+                        }, USE.NAMES=T)
+                    }))
+                } else {
+                    gs.frac <- sapply(sgd$ratio.GS, function(rgs.rep) {
+                        rgs.rep[gs, , drop=F]
+                    }, USE.NAMES=T)
+                }
                 return (gs.frac)
             }))
             initial.ratio <- max(gs.fracs[1L,])
@@ -549,11 +469,11 @@ metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
                              gs.fracs.itp.mean=gs.fracs.itp.mean))
             )
         })
-        names(GS.metric) <- geneset.ID
+        names(GS.metric) <- names(gene.sets)
     }
     
     if (method == "survival") {
-        REPPATTERN <- "[_0-9]+$"
+        #REPPATTERN <- "[_0-9]+$"
         # fitness.ranked.mean <- do.call(cbind, mclapply(scores, mc.cores=mc.cores, function(sgd) {
         #     apply(sgd$fitness.ranked, 2, func)
         # }))
@@ -562,14 +482,23 @@ metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
         # xlen <- length(xout)
         mc.cores1 <- floor(sqrt(mc.cores))
         mc.cores2 <- floor(mc.cores/mc.cores1)
-        GS.metric <- mclapply(geneset.ID, mc.cores=mc.cores1, function(gs) {
-            i <- match(gs, names(scores[[1L]]$gene.sets))
+        GS.metric <- mclapply(1L:length(gene.sets), mc.cores=mc.cores1, function(j) {
+            gs <- names(gene.sets)[j]
+            i  <- match(gs, names(scores[[1L]]$gene.sets))
             gs.len <- length(scores[[1L]]$gene.sets[[i]])
             ##- degradation of gs w.r.t #removed genes
             gs.fracs <- do.call(cbind, mclapply(scores, mc.cores=mc.cores2, function(sgd) {
-                gs.frac <- sapply(sgd$ratio.GS, function(rgs.rep) {
-                    rgs.rep[gs, , drop=F]
-                }, USE.NAMES=T)
+                if (is.na(i)) {
+                    gs.frac <- t(sapply(sgd$sub.genes, function(sgdsg) {
+                        sapply(sgdsg, function(sg) {
+                            length(intersect(gene.sets[[j]], sg)) / length(gene.sets[[j]])
+                        }, USE.NAMES=T)
+                    }))
+                } else {
+                    gs.frac <- sapply(sgd$ratio.GS, function(rgs.rep) {
+                        rgs.rep[gs, , drop=F]
+                    }, USE.NAMES=T)
+                }
                 return (gs.frac)
             }))
             #matplot(fitness.ranked.pcg, gs.fracs, type='l', col=cols.rep, lty=ltys.rep)#[,paste0("WN",1:4)]
@@ -593,7 +522,9 @@ metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
             # xlen <- length(xout)
             
             surv.data <- as.data.frame(do.call(rbind, mclapply(1L:samples.num, mc.cores=mc.cores2, function(k) {
-                cond <- gsub(colnames(gs.fracs)[k], pattern=REPPATTERN, replacement='')
+                #cond <- gsub(colnames(gs.fracs)[k], pattern=REPPATTERN, replacement='')
+                cond.idx <- sapply(conds, function(cnd) {grep(cnd, colnames(gs.fracs)[k], value=T)}, USE.NAMES=T)
+                cond <- names(cond.idx)[which(lengths(cond.idx)>0)]
                 do.call(rbind, lapply(2L:length(idx.out[[k]]), function(l) {
                     idx.l <- idx.out[[k]][l]
                     idv.num <- round(gs.len*(gs.fracs[idx.l-1L,k]-gs.fracs[idx.l,k]), 0L)
@@ -630,9 +561,9 @@ metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
                     pw.idx <- combn(cond.num, 2)
                     pw.posthoc <- as.data.frame(t(sapply(1L:ncol(pw.idx), function(k) {
                         pw.surv.data <- surv.data[surv.data$cond %in% conds[pw.idx[,k]], , drop=F]
-                        pw.gs.coxph  <- survival::coxph(Surv(time) ~ cond,
+                        pw.gs.coxph  <- survival::coxph(survival::Surv(time) ~ cond,
                                                         data=pw.surv.data,
-                                                        weights=surv.data$weight, 
+                                                        weights=pw.surv.data$weight, 
                                                         control=survival::coxph.control(iter.max = 40))
                         pw.gs.coxph.sum <- summary(pw.gs.coxph)
                         pw.statistic <- unname(pw.gs.coxph.sum[[test.idx]]["test"])
@@ -693,7 +624,7 @@ metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
                              surv.data=surv.data))
             )
         })
-        names(GS.metric) <- geneset.ID
+        names(GS.metric) <- names(gene.sets)
     }
     
     ##- plot ----
@@ -718,8 +649,8 @@ metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
               side=3, line=3, outer=T, cex=cex.main, font=2)
         if (method == 'perm') {
             mtext(paste0("E = ", signif(gsm$res$statistic,2), 
-                         ", min(p) = ", signif(min(gsm$res$p.Cond),2),
-                         ", max(p) = ", signif(max(gsm$res$p.Cond),2),
+                         #", min(p) = ", signif(min(gsm$res$p.Cond),2),
+                         #", max(p) = ", signif(max(gsm$res$p.Cond),2),
                          ", p-val = ", signif(gsm$res$p.Val,2)),
                   #"\n", go.newick.ec, "\n", go.newick.ex),
                   side=3, line=1, outer=T, cex=cex.main, font=2)
@@ -731,7 +662,7 @@ metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
         mtext(panels[1], side=3, line=line.panel, outer=T, adj=0, cex=cex.panel, font=2)
         legend(ifelse(max(gsm$plot$gs.fracs[min(which(gene.del>0.75*max(gene.del))),]) < 0.5, 
                       'topright', 'bottomleft'),
-               conds, lty=c(1L:cond.num), lwd=2, col=cols, cex=cex.leg)
+               conds, lty=ltys, lwd=2, col=cols, cex=cex.leg)
         if (method == 'perm') {
             matplot(gsm$plot$xout, gsm$plot$gs.fracs.itp.mean,
                     xlab="fitness*frac_gene_model", ylab="frac_gene_set",
@@ -747,7 +678,7 @@ metaboGSE <- function(scores, geneset.ID = NULL, method = "perm", test = NA,
             mtext(panels[2], side=3, line=line.panel+0.4, outer=F, at=-0.23, cex=cex.panel, font=2)
         }
         # legend(ifelse(max(gs.fracs.mean[min(which(xout>0.25)),]) < 0.5, 'topright', 'bottomleft'),
-        #        conds, lty=c(1L:cond.num), lwd=2, col=cols, cex=cex.leg)
+        #        conds, lty=ltys, lwd=2, col=cols, cex=cex.leg)
     }))
     invisible(dev.off())
     ##-----
