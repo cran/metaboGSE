@@ -4,8 +4,10 @@
 \alias{submnet}
 \title{Simulation of gene removal-based submodel series with a given ranking}
 \usage{
-submnet(model, fn, rank.best = "expr", gene.sets = NULL, mc.cores = 1,
-  obj.react = NA, tol = SYBIL_SETTINGS("TOLERANCE"))
+submnet(model, fn, rank.best = "expr", gene.sets = NULL,
+  mc.cores = 1, obj.react = NA, timeout = 12,
+  tol = SYBIL_SETTINGS("TOLERANCE"), solver = SYBIL_SETTINGS("SOLVER"),
+  method = SYBIL_SETTINGS("METHOD"))
 }
 \arguments{
 \item{model}{An object of class \code{modelorg} indicating the weighted \code{rescue} model obtained from the rescue process.}
@@ -21,7 +23,13 @@ depletion fraction of gene sets should be further computed for gene set enrichme
 
 \item{obj.react}{A string indicating objective reaction ID. Default: reaction producing BIOMASS.}
 
+\item{timeout}{The maximum time in seconds to allow for LP call to return. Default: 12.}
+
 \item{tol}{The maximum value to be considered null. Default: \code{SYBIL_SETTINGS("TOLERANCE")}.}
+
+\item{solver}{\code{\link{sybil}} solver. Default: \code{SYBIL_SETTINGS("SOLVER")}.}
+
+\item{method}{\code{\link{sybil}} method. Default: \code{SYBIL_SETTINGS("METHOD")}.}
 }
 \value{
 An object of class \code{scoreGeneDel} for the submodel construction simulation.

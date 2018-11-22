@@ -62,7 +62,8 @@ hmodel.clean
 
 ## ---- eval=TRUE----------------------------------------------------------
 SYBIL_SETTINGS("OPT_DIRECTION", "min")
-hmodel.weight <- changeObjFunc(hmodel.clean, react=rownames(hmodel.rescue$coef), obj_coef=hmodel.rescue$coef)
+hmodel.weight <- changeObjFunc(hmodel.clean, react=rownames(hmodel.rescue$coef), 
+                               obj_coef=hmodel.rescue$coef)
 hmodel.weight
 optimizeProb(hmodel.weight)
 
@@ -142,6 +143,13 @@ submnetsUH <- submnet(model        = hmodel.weight,
                       gene.sets    = GO2geneID.interest,
                       mc.cores     = mc.cores)
 
+## ---- eval=FALSE---------------------------------------------------------
+#  ## not run
+#  pseudo.rank <- base::rank(rowSums(exprMaguire$expr),
+#                            ties.method='first')/nrow(exprMaguire$expr)*1e-6
+#  exprMaguire$expr <- exprMaguire$expr + pseudo.rank
+#  ##
+
 ## ---- eval=TRUE, warnings=FALSE------------------------------------------
 submnetsUH$condition
 knitr::kable(submnetsUH$gene.del)
@@ -180,7 +188,7 @@ GS.sig.all <- as.data.frame(t(sapply(GSE, function(gsm) {
       p.Cond=if (is.null(gsm$res$p.Cond)) NA else min(gsm$res$p.Cond),
       p.Val=gsm$res$p.Val,
       Genes=paste(intersect(genesInTerm(GOdata, gsm$res$GS.ID)[[1]], 
-                            sybil::allGenes(hmodel.clean)), collapse=','))
+                            sybil::allGenes(hmodel.clean)), collapse=","))
 })), stringsAsFactors=F)
 GS.sig.all$FDR  <- p.adjust(as.numeric(GS.sig.all$p.Val), method="BH")
 GS.sig.all <- GS.sig.all[!is.na(GS.sig.all$FDR), ]
@@ -188,6 +196,5 @@ dim(GS.sig.all)
 
 ## ---- eval=TRUE----------------------------------------------------------
 GS.sig <- GS.sig.all[as.numeric(GS.sig.all$FDR) < 0.05, , drop=F]
-GS.sig <- GS.sig[as.numeric(GS.sig$p.Cond) < 0.01, , drop=F]
-dim(GS.sig)
+head(GS.sig[order(as.numeric(GS.sig$Statistic), decreasing=T), c(1:5,7)])
 

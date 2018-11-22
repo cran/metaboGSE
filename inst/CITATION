@@ -9,9 +9,9 @@ citEntry(
                person("Dominique", "Sanglard"),
                person("Marco", "Pagni")),
     title = "Condition-specific series of metabolic sub-networks and its application for gene set enrichment analysis",
-    journal = "bioRxiv",
+    journal = "Bioinformatics",
     year = "2018",
-    url = "https://www.biorxiv.org/content/early/2018/01/29/200964",
-    doi = "10.1101/200964",
-    textVersion = "Tran, V.D.T. et al. (2018) Condition-specific series of metabolic sub-networks and its application for gene set enrichment analysis. bioRxiv 200964."
+    url = "https://doi.org/10.1093/bioinformatics/bty929",
+    doi = "10.1093/bioinformatics/bty929",
+    textVersion = "Tran, V.D.T. et al. (2018) Condition-specific series of metabolic sub-networks and its application for gene set enrichment analysis. Bioinformatics, bty929."
 )

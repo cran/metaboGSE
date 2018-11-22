@@ -15,5 +15,5 @@ data(yarliGOdata)
 topGOdata object built from yarli2GO
 }
 \references{
-Tran, V.D.T. et al. (2018) Condition-specific series of metabolic  sub-networks and its application for gene set enrichment analysis. bioRxiv 200964.
+Tran, V.D.T. et al. (2018) Condition-specific series of metabolic  sub-networks and its application for gene set enrichment analysis. Bioinformatics, bty929.
 }

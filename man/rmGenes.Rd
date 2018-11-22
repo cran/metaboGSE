@@ -17,3 +17,7 @@ The submodel.
 \description{
 This functions creates a submodel by removing genes from a given model. It is similar to \code{deleteModelGenes} from the COBRA Toolbox.
 }
+\examples{
+data(Ec_core)
+rmGenes(Ec_core, head(sybil::allGenes(Ec_core)))
+}

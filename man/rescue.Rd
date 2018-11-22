@@ -4,8 +4,8 @@
 \alias{rescue}
 \title{Rescue a model}
 \usage{
-rescue(model, target, react = NULL, weight.type = "r", prefix.rescue = NA,
-  prefix.rescued = NA, rescue.threshold = 1e-05)
+rescue(model, target, react = NULL, weight.type = "r", timeout = 12,
+  prefix.rescue = NA, prefix.rescued = NA, rescue.threshold = 1e-05)
 }
 \arguments{
 \item{model}{An object of class \code{modelorg}.}
@@ -15,6 +15,8 @@ rescue(model, target, react = NULL, weight.type = "r", prefix.rescue = NA,
 \item{react}{A numeric vector or a character vector containing reaction id's. Default: reactions in objective function.}
 
 \item{weight.type}{A character indicating which type of weighting to use in model objective modification, i: 1, r: 1/coefficient, s: 1/sqrt(coefficient). Default: r.}
+
+\item{timeout}{The maximum time in seconds to allow for LP call to return. Default: 12.}
 
 \item{prefix.rescue}{A string indicating the prefix of output rescue model. Default: no output.}
 

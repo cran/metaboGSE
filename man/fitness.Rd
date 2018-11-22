@@ -5,8 +5,9 @@
 \title{Fitness of gene removal-based submodels with different gene rankings}
 \usage{
 fitness(model, ranks, rescue.weight = NULL, step = 1, draw.num = 0,
-  obj.react = NA, mc.cores = 1, tol = SYBIL_SETTINGS("TOLERANCE"),
-  solver = SYBIL_SETTINGS("SOLVER"), method = SYBIL_SETTINGS("METHOD"))
+  obj.react = NA, mc.cores = 1, timeout = 12,
+  tol = SYBIL_SETTINGS("TOLERANCE"), solver = SYBIL_SETTINGS("SOLVER"),
+  method = SYBIL_SETTINGS("METHOD"))
 }
 \arguments{
 \item{model}{An object of class \code{modelorg} indicating the weighted \code{rescue} model obtained from the rescue process.}
@@ -24,6 +25,8 @@ This is to reduce the computing time for non-informative sub-models at the end o
 \item{obj.react}{A string indicating objective reaction ID. Default: reaction producing BIOMASS.}
 
 \item{mc.cores}{The number of cores to use (at least 1), i.e. at most how many child processes will be run simultaneously. Default: 1.}
+
+\item{timeout}{The maximum time in seconds to allow for LP call to return. Default: 12.}
 
 \item{tol}{The maximum value to be considered null. Default: \code{SYBIL_SETTINGS("TOLERANCE")}.}
 

@@ -90,16 +90,18 @@ diagnosticTolerance <- function(model, mc.cores = 2,
 #' @param target A numeric vector for growth target.
 #' @param react A numeric vector or a character vector containing reaction id's. Default: reactions in objective function.
 #' @param weight.type A character indicating which type of weighting to use in model objective modification, i: 1, r: 1/coefficient, s: 1/sqrt(coefficient). Default: r.
+#' @param timeout The maximum time in seconds to allow for LP call to return. Default: 12.
 #' @param prefix.rescue A string indicating the prefix of output rescue model. Default: no output.
 #' @param prefix.rescued A string indicating the prefix of output rescued model. Default: no output.
 #' @param rescue.threshold A numeric value indicating the threshold to consider a rescue. Default: 1e-5.
 #' @return The rescue and rescued models, as well as the coefficient set to rescue reactions. SYBIL_SETTINGS("OPT_DIRECTION") is set as "min".
 #' @import sybil
+#' @importFrom sys eval_safe
 #' @export
 #' @examples 
 #' data(Ec_core)
 #' rescue(Ec_core, target=0.1)
-rescue <- function(model, target, react = NULL, weight.type = 'r',
+rescue <- function(model, target, react = NULL, weight.type = 'r', timeout = 12,
                    prefix.rescue = NA, prefix.rescued = NA, rescue.threshold = 1e-5) {
     if (!is(model, "modelorg")) {
         stop("needs an object of class modelorg!")
@@ -140,11 +142,14 @@ rescue <- function(model, target, react = NULL, weight.type = 'r',
     colnames(smat) <- react_id(model)
     rownames(smat) <- met_id(model)
     met.obj        <- smat[, obj.ind, drop=F]
-    met.obj.ind    <- which(rowSums(abs(met.obj)) != 0)
-    ## not rescue BIOMASS metabolite
-    biomass.ind    <- grep(names(met.obj.ind), pattern="BIOMASS|biomass", value=F, perl=T)
-    if (length(biomass.ind) > 0)
-        met.obj.ind    <- met.obj.ind[-biomass.ind]
+    ## both substrates and products
+    #met.obj.ind    <- which(rowSums(abs(met.obj)) != 0)
+    ## not rescue BIOMASS, NEFA, DROPLET
+    #biomass.ind    <- grep(names(met.obj.ind), pattern="BIOMASS|biomass|NEFA|DROPLET|MNXM2\\[", value=F, perl=T)
+    #if (length(biomass.ind) > 0)
+        #met.obj.ind    <- met.obj.ind[-biomass.ind]
+    ## only substrates
+    met.obj.ind    <- which(rowSums(met.obj) < 0)
     met.comp       <- met_comp(model)
     ref.ind        <- which.max(apply(met.obj[met.obj.ind, , drop=F], 2, function(x) {
         length(which(x != 0))
@@ -184,33 +189,33 @@ rescue <- function(model, target, react = NULL, weight.type = 'r',
                 }
                 if (! paste("HELP", reco.type, rea.suffix, sep='') %in% react_id(model.rescue)) {
                     model.rescue <- addReactFixed(model   = model.rescue,
-                                             id         = paste("HELP", reco.type, rea.suffix, sep=''),
-                                             met        = mets,
-                                             Scoef      = c(-1, 1),
-                                             reversible = F,
-                                             lb         = 0,
-                                             ub         = SYBIL_SETTINGS("MAXIMUM"),
-                                             obj        = 0,
-                                             gprAssoc   = "",
-                                             metName    = mets,
-                                             metComp    = metcomps
-                                             )
+                                                  id         = paste("HELP", reco.type, rea.suffix, sep=''),
+                                                  met        = mets,
+                                                  Scoef      = c(-1, 1),
+                                                  reversible = F,
+                                                  lb         = 0,
+                                                  ub         = SYBIL_SETTINGS("MAXIMUM"),
+                                                  obj        = 0,
+                                                  gprAssoc   = "",
+                                                  metName    = mets,
+                                                  metComp    = metcomps
+                                                  )
                 }
 
                 ##- RECO reactions
                 if (! paste("RECO", reco.type, rea.suffix, sep='') %in% react_id(model.rescue)) {
                     model.rescue <- addReactFixed(model      = model.rescue,
-                                             id         = paste("RECO", reco.type, rea.suffix, sep=''),
-                                             met        = c(met.reco),
-                                             Scoef      = ifelse(met.obj[met.obj.ind[mi], ri] < 0, c(1), c(-1)),
-                                             reversible = F,
-                                             lb         = 0,
-                                             ub         = SYBIL_SETTINGS("MAXIMUM"),
-                                             obj        = 0,
-                                             gprAssoc   = "",
-                                             metName    = c(met.reco),
-                                             metComp    = c(which(mod_compart(model.rescue) == comp.reco))
-                                             )
+                                                  id         = paste("RECO", reco.type, rea.suffix, sep=''),
+                                                  met        = c(met.reco),
+                                                  Scoef      = ifelse(met.obj[met.obj.ind[mi], ri] < 0, c(1), c(-1)),
+                                                  reversible = F,
+                                                  lb         = 0,
+                                                  ub         = SYBIL_SETTINGS("MAXIMUM"),
+                                                  obj        = 0,
+                                                  gprAssoc   = "",
+                                                  metName    = c(met.reco),
+                                                  metComp    = c(which(mod_compart(model.rescue) == comp.reco))
+                                                  )
                 }
 
                 if (! paste("RECO", reco.type, rea.suffix, sep='') %in% coef[, 1]) {
@@ -252,19 +257,42 @@ rescue <- function(model, target, react = NULL, weight.type = 'r',
     model.weight <- changeObjFunc(model.rescue,
                                   react=rownames(coefs),
                                   obj_coef=coef.weight)
-    fba          <- optimizeProb(model.weight, algorithm='fba', retOptSol=T)
-    ## MILP can be better here!
-    if (!checkOptSol(fba, onlywarn=T)) {
-        stop("FBA failed.")
+    if (SYBIL_SETTINGS("SOLVER") == "glpkAPI") {
+        fba <- optimizeProb(model.weight, algorithm='fba', retOptSol=T, lpdir='min',
+                            solverParm=list(TM_LIM=1000*timeout))
+    } else if (SYBIL_SETTINGS("SOLVER") == "lpSolveAPI") {
+        fba <- optimizeProb(model.weight, algorithm='fba', retOptSol=T, lpdir='min',
+                            solverParm=list(timeout=timeout))
+    } else if (SYBIL_SETTINGS("SOLVER") == "cplexAPI") {
+        fba <- optimizeProb(model.weight, algorithm='fba', retOptSol=T, lpdir='min',
+                            solverParm=list(CPX_PARAM_TILIM=timeout))
+    } else {
+        fba <- tryCatch(
+            sys::eval_safe(optimizeProb(model.weight, algorithm='fba',
+                                        retOptSol=T, lpdir='min'),
+                           timeout=timeout),
+            error=function(e) {
+                fba <- NULL
+            })
     }
-    wtflux       <- setNames(getFluxDist(fba), react_id(model.weight))
-
+    if (!is.null(fba))
+        cos <- checkOptSol(fba)
+    if (is.null(fba) ||
+        exit_code(cos)!=0 ||
+        (SYBIL_SETTINGS("SOLVER") == "glpkAPI" && status_code(cos)!=5) ||
+        (SYBIL_SETTINGS("SOLVER") %in% c("clpAPI", "lpSolveAPI") && status_code(cos)!=0)
+        )
+                                        #if (is.null(fba) || !checkOptSol(fba, onlywarn=T))
+        stop("FBA failed. Please try with another SOLVER-METHOD!")
+    
+    wtflux <- setNames(getFluxDist(fba), react_id(model.weight))
+    
     ##- necessary reactions for rescue
     flux.reco <- wtflux[rownames(coefs)]
     threshold <- (rescue.threshold * target %*% t(coefs))[1, ]
     reco.keep <- names(flux.reco)[which(flux.reco > threshold)]
     help.keep <- sub(reco.keep, pattern="RECO", replacement="HELP")
-
+    
     ##- initialize rescued model
     model.rescued         <- model
     smat.rescue           <- as.matrix(S(model.rescue))
