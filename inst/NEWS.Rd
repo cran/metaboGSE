@@ -4,6 +4,16 @@
 \title{metaboGSE News}
 \encoding{UTF-8}
 
+\section{Changes in version 1.2.1 2018-12-12}{
+  \itemize{
+    \item Supply the list of metabolites in each submodel
+    \item Supply the AUC difference in posthoc pairwise comparisons
+    \item Rescue both subtrates and products of reactions in the
+    objective function to reduce bugs of infinite loops in LP.
+  }
+}
+% ---------------------------------------------------------------------------- %
+
 \section{Changes in version 1.2.0 2018-11-22}{
   \itemize{
     \item Introduce the option \code{timeout} to the function

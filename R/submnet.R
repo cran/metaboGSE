@@ -14,6 +14,7 @@
 #' @param ratio.GS Percentages of remaining genes in each gene set.
 #' @param sub.genes Remaining genes in submodels after propagation.
 #' @param sub.reacs Remaining reactions in submodels after propagation.
+#' @param sub.metas Remaining metabolites in submodels after propagation.
 #' @param rescue.met Fraction of every rescued metabolite among random draws.
 #' @examples 
 #' data(yarliSubmnets)
@@ -23,7 +24,7 @@ scoreGeneDel <- function(model = NULL, condition = NA,
                          fitness.random = NULL, fitness.ranks = NULL,
                          fitness.id.random = NULL,  fitness.id.ranks = NULL,
                          ess.gene = NULL, ess.reaction = NULL, gene.del = NULL, gene.sets = NULL, 
-                         ratio.GS = NULL, sub.genes = NULL, sub.reacs = NULL, rescue.met = NULL) {
+                         ratio.GS = NULL, sub.genes = NULL, sub.reacs = NULL, sub.metas = NULL, rescue.met = NULL) {
     res <- list(
         model             = model,
         condition         = condition,
@@ -38,6 +39,7 @@ scoreGeneDel <- function(model = NULL, condition = NA,
         ratio.GS          = ratio.GS,
         sub.genes         = sub.genes,
         sub.reacs         = sub.reacs,
+	sub.metas         = sub.metas,
         rescue.met        = rescue.met
     )
     class(res) <- "scoreGeneDel"
@@ -689,9 +691,11 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
                 submod <- rmReact(submod, reacs.blocked.id, rm_met=T)
                 gene.sub <- sybil::allGenes(submod)
                 reac.sub <- sybil::react_id(submod)
+		meta.sub <- sybil::met_id(submod)
             } else {
                 gene.sub <- NA
                 reac.sub <- NA
+		meta.sub <- NA
             }
             ##-----
             ##- gene set behavior ----
@@ -706,7 +710,8 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
             ##-----
             ratio.GS$gene.sub <- gene.sub
             ratio.GS$reac.sub <- reac.sub
-                
+            ratio.GS$meta.sub <- meta.sub
+
             ##- essential genes and reactions in submodels ----
             if (essential) {
                 if (SYBIL_SETTINGS("SOLVER") == "glpkAPI") {
@@ -783,6 +788,9 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
         reacs.sub <- setNames(mclapply(ratios.GS, mc.cores=mc.cores2, function(rgs) {
             rgs$reac.sub
         }), reps)
+	metas.sub <- setNames(mclapply(ratios.GS, mc.cores=mc.cores2, function(rgs) {
+            rgs$meta.sub
+        }), reps)
         esgs <- setNames(mclapply(ratios.GS, mc.cores=mc.cores2, function(rgs) {
             rgs$esg
         }), paste0("esg.", reps))
@@ -790,7 +798,7 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
             rgs$esr
         }), paste0("esr.", reps))
         ratios.GS <- setNames(mclapply(ratios.GS, mc.cores=mc.cores2, function(rgs) {
-            unlist(rgs[-c(length(rgs)-3L:0L)])
+            unlist(rgs[-c(length(rgs)-4L:0L)])
         }), paste0("gs.", reps))
         ##-----
 
@@ -801,6 +809,7 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
                          gene.del=fn[[i]]$gene.del,
                          unlist(ratios.GS)),
                      genes.sub=genes.sub,
+		     metas.sub=metas.sub,
                      reacs.sub=reacs.sub))
     })
     sub.genes <- mclapply(recoscores, mc.cores=mc.cores1, function(rcs) {
@@ -808,6 +817,9 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
     })
     sub.reacs <- mclapply(recoscores, mc.cores=mc.cores1, function(rcs) {
         rcs$reacs.sub
+    })
+    sub.metas <- mclapply(recoscores, mc.cores=mc.cores1, function(rcs) {
+        rcs$metas.sub
     })
     recoscore <- do.call(cbind, mclapply(recoscores, mc.cores=mc.cores1, function(rcs) {
         rcs$score
@@ -858,6 +870,7 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
         }), reps),
         sub.genes         = sub.genes,
         sub.reacs         = sub.reacs,
+	sub.metas         = sub.metas,
         rescue.met        = recoscore[recos, , drop=F]
         )
     return (res)

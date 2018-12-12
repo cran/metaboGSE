@@ -55,19 +55,6 @@ abbr <- function(x) {
 }
 
 
-#' Compute maximum distance between curves
-#' 
-#' This function computes the maximum distance between multiple curves
-#' @param x A matrix
-#' @return The maximum distance
-#' @keywords internal
-maxDist <- function(x) {
-    return (max(apply(x, 1, function(xrow) {
-        max(dist(xrow))
-    })))
-}
-
-
 #' Compute area between two curves
 #' 
 #' This function computes the area formed by two curves.
@@ -162,10 +149,10 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
         ncombi2  <- ncombi*factorial(samples.num)/prod(sapply(sample.num, factorial)) - factorial(cond.num) + 1
     }
     if (length(cols) == 0) {
-        cols         <- c(rainbow(cond.num))
+        cols        <- c(rainbow(cond.num))
         if (length(cols) == 7L) {
-            cols[2]  <- "darkorange1"
-            cols[3]  <- "gold3"
+            cols[2] <- "darkorange1"
+            cols[3] <- "gold3"
         }
     }
     if (length(cols) != cond.num) {
@@ -173,7 +160,7 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
     }
     cols.rep     <- rep(cols, times=sapply(samples, length))
     if (length(ltys) == 0) {
-        ltys         <- 1L:cond.num
+        ltys     <- 1L:cond.num
     }
     if (length(ltys) != cond.num) {
         stop("Number of line types does not match number of conditions.")
@@ -240,7 +227,6 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                     return (c(min(gfu.id), max(gfu.id)))
                 }))
                 apply(fitness.ranked.pcg[idx.out,], 2, function(x) {
-                    #points(rev(x), rev(gs.frac[idx.out]), type='o')
                     area(y1=rep(0,length(idx.out)), y2=rev(gs.frac[idx.out]), x=rev(x))
                 })
             })
@@ -260,7 +246,7 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
         GS.metric <- mclapply(1L:length(gene.sets), mc.cores=mc.cores1, function(j) {
             gs <- names(gene.sets)[j]
             i  <- match(gs, names(scores[[1L]]$gene.sets))
-            ##- degradation of gs w.r.t #removed genes
+            ##- degradation of gs w.r.t number of removed genes
             gs.fracs <- do.call(cbind, mclapply(scores, mc.cores=mc.cores2, function(sgd) {
                 if (is.na(i)) {
                     gs.frac <- t(sapply(sgd$sub.genes, function(sgdsg) {
@@ -326,29 +312,10 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
             gs.fracs.itp.auc.mean <- sapply(samples, function(csample) {
                 func(gs.fracs.itp.auc[csample])
             })
-            ##- this should the same as above
-            # gs.fracs.itp.mean.auc <- setNames(unlist(mclapply(1L:cond.num, mc.cores=mc.cores2, function(k) {
-            #     area(y1=rep(0, xlen), y2=gs.fracs.itp.mean[,k], x=xout)
-            # })), colnames(gs.fracs.itp.mean))
             ##- compare to random AUC
-            #rgs.auc <- initial.ratio*rGS.auc[[as.character(length(scores[[1L]]$gene.sets[[i]]))]]
-            #rgs.auc.mean <- initial.ratio*rGS.auc.mean[[as.character(length(scores[[1L]]$gene.sets[[i]]))]]
             rgs.auc.mean <- initial.ratio*do.call(cbind, rGS.auc.mean)
             
-            # round(nrand/2-1.96*sqrt(nrand)/2, 0)
-            # t.threshold <- qt(0.05, nrand-1)
-            # apply(rgs.auc, 1, function(rauc) {
-            #     mean(rauc) + t.threshold*sd(rauc)/sqrt(nrand)
-            # })
-            # p.Sample <- setNames(unlist(mclapply(colnames(gs.fracs), mc.cores=mc.cores2, function(cs) {
-            #     #ecdf(sort(rgs.auc[cs,]))(gs.fracs.itp.auc[cs])
-            #     (length(which(rgs.auc[cs,] <= gs.fracs.itp.auc[cs]))+1L)/(nrand+1L)
-            # })), colnames(gs.fracs))
-            # cond.pval <- unlist(mclapply(samples, mc.cores=mc.cores2, function(csample) {
-            #     mean(p.Sample[csample])
-            # }))
             p.Cond <- setNames(unlist(mclapply(conds, mc.cores=mc.cores2, function(cs) {
-                #ecdf(sort(rgs.auc.mean[cs,]))(gs.fracs.itp.auc.mean[cs])
                 (length(which(rgs.auc.mean[cs,] <= gs.fracs.itp.auc.mean[cs]))+1L)/(length(rgs.auc.mean[cs,])+1L)
             })), conds)
             # pdf('auccond.pdf')
@@ -391,6 +358,8 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                     pw.idx <- combn(cond.num, 2)
                     pw.posthoc <- as.data.frame(t(sapply(1L:ncol(pw.idx), function(k) {
                         pw.statistic <- maxArea(y=gs.fracs.itp.mean[, pw.idx[,k]], x=xout)
+                        pw.aucdiff <- area(y1=rep(0, xlen), y2=gs.fracs.itp.mean[, pw.idx[1,k]], x=xout) -
+                            area(y1=rep(0, xlen), y2=gs.fracs.itp.mean[, pw.idx[2,k]], x=xout)
                         pw.p.Val <- NA
                         pw.sample.num <- sapply(samples[pw.idx[,k]], length)
                         pw.samples.num <- sum(pw.sample.num)
@@ -400,11 +369,6 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                         if (pw.ncombi2 > 1) {
                             pw.gfi <- gs.fracs.itp[, unlist(samples[pw.idx[,k]]), drop=F]
                             pw.rstatistic <- unlist(mclapply(1L:nperm, mc.cores=mc.cores2, mc.set.seed=T, function(l) {
-                                # pw.gfi.perm <- t(apply(pw.gfi, 1, function(pgfi) {
-                                #     pgfi[sample(1L:ncol(pw.gfi))]
-                                # }))
-                                # colnames(pw.gfi.perm) <- colnames(pw.gfi)
-                                
                                 ridx <- sample(1L:xlen, size=1)
                                 pw.gfi.perm <- pw.gfi
                                 pw.gfi.perm[c(1L:ridx), ] <- pw.gfi[c(1L:ridx), sample(1L:ncol(pw.gfi))]
@@ -420,31 +384,19 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                         return (c(cond1     = conds[pw.idx[1,k]],
                                   cond2     = conds[pw.idx[2,k]],
                                   statistic = signif(pw.statistic, 2),
+                                  aucdiff   = signif(pw.aucdiff, 2),
                                   p.Val     = pw.p.Val))
                     })), stringsAsFactors=F)
                 }
                 ##-----
                 
                 ##- Newick ----
-                # group1.ex <- ""
-                # group2.ex <- ""
                 if (contrast) {
-                    #go.diff.mat  <- matrix(unlist(go.diff.list), ncol=length(go.diff.list), byrow=F)
-                    #colnames(go.diff.mat) <- conds
-                    #xout.mat <- matrix(unlist(xout), ncol=length(xout), byrow=F)
                     gs.hc.ec <- hclust(dist(t(gs.fracs.itp.mean), method="manhattan"), method="ward.D")
                     gs.newick.ec <- gsub(ctc::hc2Newick(gs.hc.ec), pattern=":[.0-9]+|;$", replacement="", perl=T)
                     groupcut.ec <- sort(cutree(gs.hc.ec, k=2))
                     group1.ec <- names(which(groupcut.ec==1))
                     group2.ec <- names(which(groupcut.ec==2))
-                    
-                    # go.genes <- GO2geneID.interest[[which(names(GO2geneID.interest) == go)]]
-                    # go.expr  <- expr.ini[unique(unlist(go.genes)), , drop=F]
-                    # go.hc.ex <- hclust(dist(t(go.expr)), method="ward.D")
-                    # go.newick.ex <- gsub(ctc::hc2Newick(go.hc.ex), pattern=":[.0-9]+|;$", replacement="", perl=T)
-                    # groupcut.ex <- sort(cutree(go.hc.ex, k=2))
-                    # group1.ex <- names(which(groupcut.ex==1))
-                    # group2.ex <- names(which(groupcut.ex==2))
                 }
                 ##-----
             }
@@ -460,10 +412,8 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                                   contrast    = c(newick = gs.newick.ec,
                                                   group1 = paste(group1.ec, collapse=','),
                                                   group2 = paste(group2.ec, collapse=',')
-                                                  #group1.ex = paste(group1.ex, collapse=','),
-                                                  #group2.ex = paste(group2.ex, collapse=','))
-                                  )),
-                         plot=list(#gs.fracs.mean=gs.fracs.mean,
+                                      )),
+                         plot=list(
                              gs.fracs=gs.fracs,
                              xout=xout, 
                              gs.fracs.itp.mean=gs.fracs.itp.mean))
@@ -473,20 +423,13 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
     }
     
     if (method == "survival") {
-        #REPPATTERN <- "[_0-9]+$"
-        # fitness.ranked.mean <- do.call(cbind, mclapply(scores, mc.cores=mc.cores, function(sgd) {
-        #     apply(sgd$fitness.ranked, 2, func)
-        # }))
-        # fitness.ranked.mean.pcg <- fitness.ranked.mean * (1-gene.del/max(gene.del))
-        # xout <- unique(sort(as.vector(fitness.ranked)))
-        # xlen <- length(xout)
         mc.cores1 <- floor(sqrt(mc.cores))
         mc.cores2 <- floor(mc.cores/mc.cores1)
         GS.metric <- mclapply(1L:length(gene.sets), mc.cores=mc.cores1, function(j) {
             gs <- names(gene.sets)[j]
             i  <- match(gs, names(scores[[1L]]$gene.sets))
             gs.len <- length(scores[[1L]]$gene.sets[[i]])
-            ##- degradation of gs w.r.t #removed genes
+            ##- degradation of gs w.r.t number of removed genes
             gs.fracs <- do.call(cbind, mclapply(scores, mc.cores=mc.cores2, function(sgd) {
                 if (is.na(i)) {
                     gs.frac <- t(sapply(sgd$sub.genes, function(sgdsg) {
@@ -501,7 +444,6 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                 }
                 return (gs.frac)
             }))
-            #matplot(fitness.ranked.pcg, gs.fracs, type='l', col=cols.rep, lty=ltys.rep)#[,paste0("WN",1:4)]
             initial.ratio <- max(gs.fracs[1L,])
             gs.fracs.mean <- do.call(cbind, mclapply(samples, mc.cores=mc.cores2, function(csample) {
                 apply(gs.fracs[, csample, drop=F], 1, func)
@@ -515,14 +457,8 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                     return (min(gfu.id))
                 }))
             })
-            ##- fitness where gs.fracs change their value
-            # xout <- unique(sort(unlist(mclapply(1L:samples.num, mc.cores=mc.cores2, function(k) {
-            #     fitness.ranked.pcg[idx.out[[k]], k]
-            # }))))
-            # xlen <- length(xout)
             
             surv.data <- as.data.frame(do.call(rbind, mclapply(1L:samples.num, mc.cores=mc.cores2, function(k) {
-                #cond <- gsub(colnames(gs.fracs)[k], pattern=REPPATTERN, replacement='')
                 cond.idx <- sapply(conds, function(cnd) {grep(cnd, colnames(gs.fracs)[k], value=T)}, USE.NAMES=T)
                 cond <- names(cond.idx)[which(lengths(cond.idx)>0)]
                 do.call(rbind, lapply(2L:length(idx.out[[k]]), function(l) {
@@ -533,7 +469,6 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                     }
                     return (t(replicate(idv.num,
                                         c(time   = unname((1-fitness.ranked.pcg[idx.l-1L,k])^fitness.ranked.pcg[idx.l-1L,k]),
-                                          #group  = paste0(which(conds==cond),l),
                                           weight = unname(fitness.ranked.pcg[idx.l-1L,k]),
                                           cond   = cond))))
                 }))
@@ -598,14 +533,6 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                     groupcut.ec <- sort(cutree(gs.hc.ec, k=2))
                     group1.ec <- names(which(groupcut.ec==1))
                     group2.ec <- names(which(groupcut.ec==2))
-                    
-                    # go.genes <- GO2geneID.interest[[which(names(GO2geneID.interest) == go)]]
-                    # go.expr  <- expr.ini[unique(unlist(go.genes)), , drop=F]
-                    # go.hc.ex <- hclust(dist(t(go.expr)), method="ward.D")
-                    # go.newick.ex <- gsub(ctc::hc2Newick(go.hc.ex), pattern=":[.0-9]+|;$", replacement="", perl=T)
-                    # groupcut.ex <- sort(cutree(go.hc.ex, k=2))
-                    # group1.ex <- names(which(groupcut.ex==1))
-                    # group2.ex <- names(which(groupcut.ex==2))
                 }
                 ##-----
             }
@@ -619,7 +546,7 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                                                   group1 = paste(group1.ec, collapse=','),
                                                   group2 = paste(group2.ec, collapse=',')
                                   )),
-                         plot=list(#gs.fracs.mean=gs.fracs.mean,
+                         plot=list(
                              gs.fracs=gs.fracs,
                              surv.data=surv.data))
             )
@@ -639,7 +566,7 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
     pdf(file=paste(prefix, "GSE.pdf", sep='_'), width=10, height=5)
     invisible(sapply(GS.metric, function(gsm) {
         par(mfrow=c(1,2), mar=c(4.2,5.0,0.3,0.5), oma=c(0.1,0.5,5,0.5), xpd=NA)
-        matplot(gene.del, gsm$plot$gs.fracs,#gsm$plot$gs.fracs.mean,
+        matplot(gene.del, gsm$plot$gs.fracs,
                 xlab="#removed_genes",
                 ylab="frac_gene_set",
                 ylim=c(0,1),
@@ -652,7 +579,6 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                          #", min(p) = ", signif(min(gsm$res$p.Cond),2),
                          #", max(p) = ", signif(max(gsm$res$p.Cond),2),
                          ", p-val = ", signif(gsm$res$p.Val,2)),
-                  #"\n", go.newick.ec, "\n", go.newick.ex),
                   side=3, line=1, outer=T, cex=cex.main, font=2)
         } else {
             mtext(paste0("E = ", signif(gsm$res$statistic,2), 
@@ -677,8 +603,6 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                  col=cols, lty=ltys, lwd=2)
             mtext(panels[2], side=3, line=line.panel+0.4, outer=F, at=-0.23, cex=cex.panel, font=2)
         }
-        # legend(ifelse(max(gs.fracs.mean[min(which(xout>0.25)),]) < 0.5, 'topright', 'bottomleft'),
-        #        conds, lty=ltys, lwd=2, col=cols, cex=cex.leg)
     }))
     invisible(dev.off())
     ##-----

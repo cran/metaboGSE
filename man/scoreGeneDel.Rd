@@ -8,7 +8,8 @@ scoreGeneDel(model = NULL, condition = NA, fitness.random = NULL,
   fitness.ranks = NULL, fitness.id.random = NULL,
   fitness.id.ranks = NULL, ess.gene = NULL, ess.reaction = NULL,
   gene.del = NULL, gene.sets = NULL, ratio.GS = NULL,
-  sub.genes = NULL, sub.reacs = NULL, rescue.met = NULL)
+  sub.genes = NULL, sub.reacs = NULL, sub.metas = NULL,
+  rescue.met = NULL)
 }
 \arguments{
 \item{model}{An object of class \code{modelorg} indicating the weighted \code{rescue} model obtained from the rescue process.}
@@ -36,6 +37,8 @@ scoreGeneDel(model = NULL, condition = NA, fitness.random = NULL,
 \item{sub.genes}{Remaining genes in submodels after propagation.}
 
 \item{sub.reacs}{Remaining reactions in submodels after propagation.}
+
+\item{sub.metas}{Remaining metabolites in submodels after propagation.}
 
 \item{rescue.met}{Fraction of every rescued metabolite among random draws.}
 }

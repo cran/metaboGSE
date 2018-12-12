@@ -85,7 +85,7 @@ length(yarliGSE)
 
 #### 3.3.1&nbsp;&nbsp;Model rescuing
 
-Both models of iMK735 grow, nevertheless we should still apply the rescue procedure to produce the rescue reactions for all metabolites in growth and maintenance (if any) reactions (see [@tran]). For instance, we here perform the rescue process while targeting a growth of 20% of the initial objective value for the hypoxic model.
+Both models of iMK735 grow, nevertheless we should still apply the rescue procedure to produce the rescue reactions for all metabolites in growth and maintenance (if any) reactions (see [@tran]). In the version 1.2.1, we remove the option to rescue only substrates in these reactions, which helps to reduce the bug of infinite loop in LP solving. For instance, we here perform the rescue process while targeting a growth of 20% of the initial objective value for the hypoxic model.
 
 ```{r, eval=TRUE}
 target.ratio <- 0.2

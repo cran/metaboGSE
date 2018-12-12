@@ -142,14 +142,17 @@ rescue <- function(model, target, react = NULL, weight.type = 'r', timeout = 12,
     colnames(smat) <- react_id(model)
     rownames(smat) <- met_id(model)
     met.obj        <- smat[, obj.ind, drop=F]
-    ## both substrates and products
-    #met.obj.ind    <- which(rowSums(abs(met.obj)) != 0)
-    ## not rescue BIOMASS, NEFA, DROPLET
-    #biomass.ind    <- grep(names(met.obj.ind), pattern="BIOMASS|biomass|NEFA|DROPLET|MNXM2\\[", value=F, perl=T)
-    #if (length(biomass.ind) > 0)
-        #met.obj.ind    <- met.obj.ind[-biomass.ind]
+
     ## only substrates
-    met.obj.ind    <- which(rowSums(met.obj) < 0)
+    #met.obj.ind    <- which(rowSums(met.obj) < 0)
+
+    ## both substrates and products
+    met.obj.ind    <- which(rowSums(abs(met.obj)) != 0)
+    ## not rescue BIOMASS
+    biomass.ind    <- grep(names(met.obj.ind), pattern="BIOMASS|biomass", value=F, perl=T)
+    if (length(biomass.ind) > 0)
+        met.obj.ind <- met.obj.ind[-biomass.ind]
+    
     met.comp       <- met_comp(model)
     ref.ind        <- which.max(apply(met.obj[met.obj.ind, , drop=F], 2, function(x) {
         length(which(x != 0))
