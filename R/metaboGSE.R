@@ -27,7 +27,7 @@ pwDesc <- function(x, desc.data = NULL) {
         return (rep("", length(x)))
     }
     if (!requireNamespace("KEGGREST", quietly = TRUE)) {
-        stop("Please install KEGGREST: source(\"https://bioconductor.org/biocLite.R\"); biocLite(\"KEGGREST\")")
+        stop("Please install KEGGREST: source('https://bioconductor.org/biocLite.R'); biocLite('KEGGREST')")
     }
     return (sapply(x, function(xx) {
         kegg.path <- tryCatch(KEGGREST::keggList(xx), error=function(e) {""})
@@ -46,12 +46,24 @@ pwDesc <- function(x, desc.data = NULL) {
 #' @return The abbreviation of x
 #' @keywords internal
 abbr <- function(x) {
-    return (gsub(gsub(gsub(gsub(gsub(x, pattern="metabolic process", replacement="mp"),
-                                pattern="biosynthetic process", replacement="bp"),
-                           pattern="catabolic process", replacement="cp"),
-                      pattern="transmembrane transport", replacement="tt"),
-                 pattern="amino acid", replacement="aa")
-    )
+    return (
+        gsub(
+            gsub(
+                gsub(
+                    gsub(
+                        gsub(
+                            gsub(
+                                gsub(
+                                    gsub(x,
+                                         pattern="metabolic process", replacement="mp"),
+                                    pattern="biosynthetic process", replacement="bp"),
+                                pattern="catabolic process", replacement="cp"),
+                            pattern="transmembrane transport", replacement="tt"),
+                        pattern="amino acid", replacement="aa"),
+                    pattern="response", replacement="res."),
+                pattern="signaling pathway", replacement="sp"),
+            pattern="regulation", replacement="reg.")
+        )
 }
 
 
@@ -119,21 +131,22 @@ maxArea <- function(y, x = NULL) {
 #' @param mc.cores The number of cores to use (at least 1), i.e. at most how many child processes will be run simultaneously. Default: 1.
 #' @param posthoc A logical value indicating if pairwise tests are performed. Default: TRUE.
 #' @param contrast A logical value indicating if the Newick-based contrast will be computed. Default: FALSE.
-#' @param prefix A string indicating prefix of output files. Default: "sub".
+#' @param prefix A string indicating prefix of output plots. Default: NA, no plot.
 #' @param desc.data A vector of descriptions of a priori KEGG pathway IDs. Default: NULL,
 #' KEGGREST will be called with internet connection required if gene.sets is KEGG pathway.
 #' @param cols Colors for conditions. Default: rainbow colors.
 #' @param ltys Line types for conditions. Default: incrementing line types in R.
 #' @return Gene set enrichment information
-#' @import AnnotationDbi grDevices graphics
-#' @importFrom utils combn
+#' @import parallel utils grDevices graphics
+#' @importFrom AnnotationDbi Term
 #' @examples
 #' data(yarliSubmnets)
-#' metaboGSE(yarliSubmnets[c('SH','SN')], gene.sets = "GO:0006696", method="perm", nperm=10, nrand=10)
+#' metaboGSE(yarliSubmnets[c('SH','SN')], gene.sets = "GO:0006696",
+#'          method="perm", nperm=10, nrand=10)
 #' @export
 metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                       nperm = 1000, nrand = 1000, mc.cores = 1,
-                      posthoc = TRUE, contrast = FALSE, prefix = "sub", desc.data = NULL,
+                      posthoc = TRUE, contrast = FALSE, prefix = NA, desc.data = NULL,
                       cols = NULL, ltys = NULL) {
     ##- settings ----
     ties         <- mean
@@ -182,7 +195,7 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
     group2.ec    <- ""
     if (method == "survival") {
         if (!requireNamespace("survival", quietly = TRUE)) {
-            stop("Please install survival: install.packages(survival)")
+            stop("Please install survival: install.packages('survival')")
         }
         if (is.na(test)) {
             test <- "likelihood"
@@ -190,7 +203,7 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
     }
     if (contrast) {
         if (!requireNamespace("ctc", quietly = TRUE)) {
-            stop("Please install ctc: source(\"https://bioconductor.org/biocLite.R\"); biocLite(\"ctc\")")
+            stop("Please install ctc: source('https://bioconductor.org/biocLite.R'); biocLite('ctc')")
         }
     }
     RNGkind("L'Ecuyer-CMRG")
@@ -553,59 +566,60 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
         })
         names(GS.metric) <- names(gene.sets)
     }
-    
-    ##- plot ----
-    cex.lab    <- 1.2
-    cex.main   <- 1.3
-    cex.leg    <- 0.9
-    cex.axis   <- 0.9
-    cex.panel  <- 1.6
-    line.panel <- -1
-    panels     <- c("A", "B")
-    
-    pdf(file=paste(prefix, "GSE.pdf", sep='_'), width=10, height=5)
-    invisible(sapply(GS.metric, function(gsm) {
-        par(mfrow=c(1,2), mar=c(4.2,5.0,0.3,0.5), oma=c(0.1,0.5,5,0.5), xpd=NA)
-        matplot(gene.del, gsm$plot$gs.fracs,
-                xlab="#removed_genes",
-                ylab="frac_gene_set",
-                ylim=c(0,1),
-                col=cols.rep, lty=ltys.rep,
-                type='l', lwd=2)
-        mtext(paste0(gsm$res$GS.ID, ", ", abbr(pwDesc(gsm$res$GS.ID, desc.data=desc.data))),
-              side=3, line=3, outer=T, cex=cex.main, font=2)
-        if (method == 'perm') {
-            mtext(paste0("E = ", signif(gsm$res$statistic,2), 
-                         #", min(p) = ", signif(min(gsm$res$p.Cond),2),
-                         #", max(p) = ", signif(max(gsm$res$p.Cond),2),
-                         ", p-val = ", signif(gsm$res$p.Val,2)),
-                  side=3, line=1, outer=T, cex=cex.main, font=2)
-        } else {
-            mtext(paste0("E = ", signif(gsm$res$statistic,2), 
-                         ", p-val = ", signif(gsm$res$p.Val,2)),
-                  side=3, line=1, outer=T, cex=cex.main, font=2)
-        }
-        mtext(panels[1], side=3, line=line.panel, outer=T, adj=0, cex=cex.panel, font=2)
-        legend(ifelse(max(gsm$plot$gs.fracs[min(which(gene.del>0.75*max(gene.del))),]) < 0.5, 
-                      'topright', 'bottomleft'),
-               conds, lty=ltys, lwd=2, col=cols, cex=cex.leg)
-        if (method == 'perm') {
-            matplot(gsm$plot$xout, gsm$plot$gs.fracs.itp.mean,
-                    xlab="fitness*frac_gene_model", ylab="frac_gene_set",
-                    xlim=c(1,0), ylim=c(0,1),
-                    col=cols, lty=ltys,
+
+    if (!is.na(prefix)) {
+        ##- plot ----
+        cex.lab    <- 1.2
+        cex.main   <- 1.3
+        cex.leg    <- 0.9
+        cex.axis   <- 0.9
+        cex.panel  <- 1.6
+        line.panel <- -1
+        panels     <- c("A", "B")
+        
+        pdf(file=paste(prefix, "GSE.pdf", sep='_'), width=10, height=5)
+        invisible(sapply(GS.metric, function(gsm) {
+            par(mfrow=c(1,2), mar=c(4.2,5.0,0.3,0.5), oma=c(0.1,0.5,5,0.5), xpd=NA)
+            matplot(gene.del, gsm$plot$gs.fracs,
+                    xlab="#removed_genes",
+                    ylab="frac_gene_set",
+                    ylim=c(0,1),
+                    col=cols.rep, lty=ltys.rep,
                     type='l', lwd=2)
-            mtext(panels[2], side=3, line=line.panel+0.4, outer=F, at=1.29, cex=cex.panel, font=2)
-        } else {
-            plot(survival::survfit(survival::Surv(time) ~ cond, data=gsm$plot$surv.data), mark.time=T, 
-                 xlim=c(0,1),
-                 xlab="Time (1-fitness*frac_gene_model)", ylab="Survival fraction",
-                 col=cols, lty=ltys, lwd=2)
-            mtext(panels[2], side=3, line=line.panel+0.4, outer=F, at=-0.23, cex=cex.panel, font=2)
-        }
-    }))
-    invisible(dev.off())
-    ##-----
-    
+            mtext(paste0(gsm$res$GS.ID, ", ", abbr(pwDesc(gsm$res$GS.ID, desc.data=desc.data))),
+                  side=3, line=3, outer=T, cex=cex.main, font=2)
+            if (method == 'perm') {
+                mtext(paste0("E = ", signif(gsm$res$statistic,2), 
+                                        #", min(p) = ", signif(min(gsm$res$p.Cond),2),
+                                        #", max(p) = ", signif(max(gsm$res$p.Cond),2),
+                             ", p-val = ", signif(gsm$res$p.Val,2)),
+                      side=3, line=1, outer=T, cex=cex.main, font=2)
+            } else {
+                mtext(paste0("E = ", signif(gsm$res$statistic,2), 
+                             ", p-val = ", signif(gsm$res$p.Val,2)),
+                      side=3, line=1, outer=T, cex=cex.main, font=2)
+            }
+            mtext(panels[1], side=3, line=line.panel, outer=T, adj=0, cex=cex.panel, font=2)
+            legend(ifelse(max(gsm$plot$gs.fracs[min(which(gene.del>0.75*max(gene.del))),]) < 0.5, 
+                          'topright', 'bottomleft'),
+                   conds, lty=ltys, lwd=2, col=cols, cex=cex.leg)
+            if (method == 'perm') {
+                matplot(gsm$plot$xout, gsm$plot$gs.fracs.itp.mean,
+                        xlab="fitness*frac_gene_model", ylab="frac_gene_set",
+                        xlim=c(1,0), ylim=c(0,1),
+                        col=cols, lty=ltys,
+                        type='l', lwd=2)
+                mtext(panels[2], side=3, line=line.panel+0.4, outer=F, at=1.29, cex=cex.panel, font=2)
+            } else {
+                plot(survival::survfit(survival::Surv(time) ~ cond, data=gsm$plot$surv.data), mark.time=T, 
+                     xlim=c(0,1),
+                     xlab="Time (1-fitness*frac_gene_model)", ylab="Survival fraction",
+                     col=cols, lty=ltys, lwd=2)
+                mtext(panels[2], side=3, line=line.panel+0.4, outer=F, at=-0.23, cex=cex.panel, font=2)
+            }
+        }))
+        invisible(dev.off())
+        ##-----
+    }
     return (GS.metric)
 }

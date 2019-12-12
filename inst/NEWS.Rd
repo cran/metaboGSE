@@ -4,6 +4,15 @@
 \title{metaboGSE News}
 \encoding{UTF-8}
 
+\section{Changes in version 1.2.2 2019-12-06}{
+  \itemize{
+    \item Change sys::eval_safe to unix::eval_safe
+    \item Use \code{fixObjVal = F} in fluxVar
+    \item Move \code{topGO} to Suggests.
+  }
+}
+% ---------------------------------------------------------------------------- %
+
 \section{Changes in version 1.2.1 2018-12-12}{
   \itemize{
     \item Supply the list of metabolites in each submodel

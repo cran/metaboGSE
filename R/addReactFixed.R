@@ -15,12 +15,12 @@
 #' @param metName See \code{\link{addReact}}.
 #' @param metComp See \code{\link{addReact}}.
 #' @return An object of class \code{modelorg}.
-#' @import sybil 
+#' @import sybil
 #' @importFrom Matrix Matrix
 #' @keywords internal
-addReactFixed <- function (model, id, met, Scoef, reversible = FALSE, lb = 0, 
-    ub = SYBIL_SETTINGS("MAXIMUM"), obj = 0, subSystem = NA, 
-    gprAssoc = NA, reactName = NA, metName = NA, metComp = NA) 
+addReactFixed <- function(model, id, met, Scoef, reversible = FALSE, lb = 0, 
+                          ub = SYBIL_SETTINGS("MAXIMUM"), obj = 0, subSystem = NA, 
+                          gprAssoc = NA, reactName = NA, metName = NA, metComp = NA) 
 {
     if (!is(model, "modelorg")) {
         stop("needs an object of class modelorg!")
@@ -35,7 +35,7 @@ addReactFixed <- function (model, id, met, Scoef, reversible = FALSE, lb = 0,
     if (((ub > 0) && (lb < 0)) && (!isTRUE(reversible))) {
         Crev <- TRUE
         warning(paste("'lb' and 'ub' are signed different,", 
-            "set reversible to 'TRUE'"))
+                      "set reversible to 'TRUE'"))
     }
     else {
         Crev <- reversible
@@ -96,19 +96,19 @@ addReactFixed <- function (model, id, met, Scoef, reversible = FALSE, lb = 0,
             }
             if (any(is.na(metComp))) {
                 newmet_comp <- append(met_comp(model), rep(NA, 
-                  nNewRows))
+                                                           nNewRows))
             }
             else {
                 if (is(metComp, "numeric")) {
-                  newmet_comp <- append(met_comp(model), metComp[newM])
+                    newmet_comp <- append(met_comp(model), metComp[newM])
                 }
                 else {
-                  newmet_comp <- append(met_comp(model), match(metComp[newM], 
-                    mod_compart(model)))
+                    newmet_comp <- append(met_comp(model), match(metComp[newM], 
+                                                                 mod_compart(model)))
                 }
             }
             newmet_single <- append(met_single(model), rep(NA, 
-                nNewRows))
+                                                           nNewRows))
             newmet_de <- append(met_de(model), rep(NA, nNewRows))
             newRows <- Matrix::Matrix(0, nrow = nNewRows, ncol = react_num(model))
             newS <- rbind(newS, newRows)
@@ -138,36 +138,36 @@ addReactFixed <- function (model, id, met, Scoef, reversible = FALSE, lb = 0,
             if (any(is.na(subSystem))) {
                 ss <- subSys(model)
                 if (ncol(ss) == 0) {
-                  dim(ss) <- c(nrow(ss) + 1, ncol(ss))
-                  newsubSys <- ss
+                    dim(ss) <- c(nrow(ss) + 1, ncol(ss))
+                    newsubSys <- ss
                 }
                 else {
-                  newsubSys <- rbind(ss, rep(FALSE, ncol(subSys(model))))
+                    newsubSys <- rbind(ss, rep(FALSE, ncol(subSys(model))))
                 }
             }
             else {
                 if (is(subSystem, "logical")) {
-                  newsubSys <- rbind(subSys(model), subSystem)
+                    newsubSys <- rbind(subSys(model), subSystem)
                 }
                 else {
-                  nSubsRow <- colnames(subSys(model)) %in% subSystem
-                  newsubSys <- rbind(subSys(model), nSubsRow)
+                    nSubsRow <- colnames(subSys(model)) %in% subSystem
+                    newsubSys <- rbind(subSys(model), nSubsRow)
                 }
             }
             if (ncol(rxnGeneMat(model)) > 0) {
                 newrxnGeneMat <- rbind(rxnGeneMat(model), rep(FALSE, 
-                  ncol(rxnGeneMat(model))))
+                                                              ncol(rxnGeneMat(model))))
             }
             else {
                 newrxnGeneMat <- rxnGeneMat(model)
                 dim(newrxnGeneMat) <- c(nrow(newrxnGeneMat) + 
-                  1, ncol(newrxnGeneMat))
+                                        1, ncol(newrxnGeneMat))
             }
             if ((is.na(gprAssoc)) || (gprAssoc == "")) {
                 if ((length(gprRules(model)) > 0)) {
-                  newgprRules <- append(gprRules(model), "")
-                  newgenes <- append(sybil::genes(model), "")
-                  newgpr <- append(gpr(model), "")
+                    newgprRules <- append(gprRules(model), "")
+                    newgenes <- append(sybil::genes(model), "")
+                    newgpr <- append(gpr(model), "")
                 }
             }
             else {
@@ -175,18 +175,18 @@ addReactFixed <- function (model, id, met, Scoef, reversible = FALSE, lb = 0,
                 geneInd <- match(gene_rule$gene, sybil::allGenes(model))
                 new_gene <- which(is.na(geneInd))
                 if (length(new_gene) > 0) {
-                  newallGenes <- append(sybil::allGenes(model), gene_rule[["gene"]][new_gene])
-                  geneInd <- match(gene_rule[["gene"]], newallGenes)
-                  if (ncol(newrxnGeneMat) == 0) {
-                    newrxnGeneMat <- Matrix::Matrix(FALSE, nCols, 
-                      max(geneInd))
-                  }
-                  else {
-                    for (i in seq(along = gene_rule[["gene"]][new_gene])) {
-                      newrxnGeneMat <- cbind(newrxnGeneMat, rep(FALSE, 
-                        nrow(newrxnGeneMat)))
+                    newallGenes <- append(sybil::allGenes(model), gene_rule[["gene"]][new_gene])
+                    geneInd <- match(gene_rule[["gene"]], newallGenes)
+                    if (ncol(newrxnGeneMat) == 0) {
+                        newrxnGeneMat <- Matrix::Matrix(FALSE, nCols, 
+                                                        max(geneInd))
                     }
-                  }
+                    else {
+                        for (i in seq(along = gene_rule[["gene"]][new_gene])) {
+                            newrxnGeneMat <- cbind(newrxnGeneMat, rep(FALSE, 
+                                                                      nrow(newrxnGeneMat)))
+                        }
+                    }
                 }
                 newrxnGeneMat[nCols, geneInd] <- TRUE
                 newgpr <- append(gpr(model), gprAssoc)
@@ -265,7 +265,7 @@ addReactFixed <- function (model, id, met, Scoef, reversible = FALSE, lb = 0,
 #' @return See \code{sybil:::.parseBoolean}.
 #' @import sybil
 #' @keywords internal
-parseBooleanCopy <- function (gprRule, tokens = "()&|~") 
+parseBooleanCopy <- function(gprRule, tokens = "()&|~") 
 {
     if (is.na(gprRule) || (gprRule == "")) {
         return(list(gene = "", rule = ""))

@@ -4,10 +4,21 @@
 \alias{metaboGSE}
 \title{Gene set enrichment analysis}
 \usage{
-metaboGSE(scores, gene.sets = NULL, method = "perm", test = NA,
-  nperm = 1000, nrand = 1000, mc.cores = 1, posthoc = TRUE,
-  contrast = FALSE, prefix = "sub", desc.data = NULL, cols = NULL,
-  ltys = NULL)
+metaboGSE(
+  scores,
+  gene.sets = NULL,
+  method = "perm",
+  test = NA,
+  nperm = 1000,
+  nrand = 1000,
+  mc.cores = 1,
+  posthoc = TRUE,
+  contrast = FALSE,
+  prefix = NA,
+  desc.data = NULL,
+  cols = NULL,
+  ltys = NULL
+)
 }
 \arguments{
 \item{scores}{A list of \code{scoreGeneDel} objects.}
@@ -28,7 +39,7 @@ metaboGSE(scores, gene.sets = NULL, method = "perm", test = NA,
 
 \item{contrast}{A logical value indicating if the Newick-based contrast will be computed. Default: FALSE.}
 
-\item{prefix}{A string indicating prefix of output files. Default: "sub".}
+\item{prefix}{A string indicating prefix of output plots. Default: NA, no plot.}
 
 \item{desc.data}{A vector of descriptions of a priori KEGG pathway IDs. Default: NULL,
 KEGGREST will be called with internet connection required if gene.sets is KEGG pathway.}
@@ -45,5 +56,6 @@ This function performs the gene set enrichment analysis.
 }
 \examples{
 data(yarliSubmnets)
-metaboGSE(yarliSubmnets[c('SH','SN')], gene.sets = "GO:0006696", method="perm", nperm=10, nrand=10)
+metaboGSE(yarliSubmnets[c('SH','SN')], gene.sets = "GO:0006696",
+         method="perm", nperm=10, nrand=10)
 }

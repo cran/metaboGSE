@@ -4,9 +4,21 @@
 \alias{addReactFixed}
 \title{A fixed version of sybil::addReact}
 \usage{
-addReactFixed(model, id, met, Scoef, reversible = FALSE, lb = 0,
-  ub = SYBIL_SETTINGS("MAXIMUM"), obj = 0, subSystem = NA,
-  gprAssoc = NA, reactName = NA, metName = NA, metComp = NA)
+addReactFixed(
+  model,
+  id,
+  met,
+  Scoef,
+  reversible = FALSE,
+  lb = 0,
+  ub = SYBIL_SETTINGS("MAXIMUM"),
+  obj = 0,
+  subSystem = NA,
+  gprAssoc = NA,
+  reactName = NA,
+  metName = NA,
+  metComp = NA
+)
 }
 \arguments{
 \item{model}{See \code{\link{addReact}}.}

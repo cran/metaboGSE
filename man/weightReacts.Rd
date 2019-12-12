@@ -24,5 +24,6 @@ The function weightReacts computes the weights of rescue reactions.
 \examples{
 data(Ec_core)
 mod <- rescue(Ec_core, target=0.1)
-weightReacts(changeObjFunc(mod$rescue, react=rownames(mod$coef), obj_coef=mod$coef))
+weightReacts(changeObjFunc(mod$rescue, react=rownames(mod$coef),
+                          obj_coef=mod$coef))
 }

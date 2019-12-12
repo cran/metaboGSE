@@ -4,8 +4,16 @@
 \alias{rescue}
 \title{Rescue a model}
 \usage{
-rescue(model, target, react = NULL, weight.type = "r", timeout = 12,
-  prefix.rescue = NA, prefix.rescued = NA, rescue.threshold = 1e-05)
+rescue(
+  model,
+  target,
+  react = NULL,
+  weight.type = "r",
+  timeout = 12,
+  prefix.rescue = NA,
+  prefix.rescued = NA,
+  rescue.threshold = 1e-05
+)
 }
 \arguments{
 \item{model}{An object of class \code{modelorg}.}
@@ -25,7 +33,8 @@ rescue(model, target, react = NULL, weight.type = "r", timeout = 12,
 \item{rescue.threshold}{A numeric value indicating the threshold to consider a rescue. Default: 1e-5.}
 }
 \value{
-The rescue and rescued models, as well as the coefficient set to rescue reactions. SYBIL_SETTINGS("OPT_DIRECTION") is set as "min".
+The rescue and rescued models, as well as the coefficient set to rescue reactions.
+\code{SYBIL_SETTINGS("OPT_DIRECTION")} is set to "min".
 }
 \description{
 The function rescues a given model.

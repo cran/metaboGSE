@@ -14,5 +14,5 @@ data(yarli2GO)
 GO annotation retrieved from Uniprot
 }
 \references{
-Tran, V.D.T. et al. (2018) Condition-specific series of metabolic  sub-networks and its application for gene set enrichment analysis. Bioinformatics, bty929.
+Tran, V.D.T. et al. (2018) Condition-specific series of metabolic sub-networks and its application for gene set enrichment analysis. Bioinformatics 35(13), 2258-2266.
 }

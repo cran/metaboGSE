@@ -4,10 +4,18 @@
 \alias{submnet}
 \title{Simulation of gene removal-based submodel series with a given ranking}
 \usage{
-submnet(model, fn, rank.best = "expr", gene.sets = NULL,
-  mc.cores = 1, obj.react = NA, timeout = 12,
-  tol = SYBIL_SETTINGS("TOLERANCE"), solver = SYBIL_SETTINGS("SOLVER"),
-  method = SYBIL_SETTINGS("METHOD"))
+submnet(
+  model,
+  fn,
+  rank.best = "expr",
+  gene.sets = NULL,
+  mc.cores = 1,
+  obj.react = NA,
+  timeout = 12,
+  tol = SYBIL_SETTINGS("TOLERANCE"),
+  solver = SYBIL_SETTINGS("SOLVER"),
+  method = SYBIL_SETTINGS("METHOD")
+)
 }
 \arguments{
 \item{model}{An object of class \code{modelorg} indicating the weighted \code{rescue} model obtained from the rescue process.}
@@ -27,9 +35,9 @@ depletion fraction of gene sets should be further computed for gene set enrichme
 
 \item{tol}{The maximum value to be considered null. Default: \code{SYBIL_SETTINGS("TOLERANCE")}.}
 
-\item{solver}{\code{\link{sybil}} solver. Default: \code{SYBIL_SETTINGS("SOLVER")}.}
+\item{solver}{\code{sybil} solver. Default: \code{SYBIL_SETTINGS("SOLVER")}.}
 
-\item{method}{\code{\link{sybil}} method. Default: \code{SYBIL_SETTINGS("METHOD")}.}
+\item{method}{\code{sybil} method. Default: \code{SYBIL_SETTINGS("METHOD")}.}
 }
 \value{
 An object of class \code{scoreGeneDel} for the submodel construction simulation.
@@ -41,10 +49,13 @@ This function simulates the construction of a series of submodels by removing ge
 data(Ec_core)
 mod <- rescue(Ec_core, target=0.1)
 mod.weight <- changeObjFunc(mod$rescue, react=rownames(mod$coef), obj_coef=mod$coef)
-ranks <- list(rep.1=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-                                             mean=5, sd=4), sybil::allGenes(mod.weight))),
-              rep.2=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-                                             mean=5, sd=4.1), sybil::allGenes(mod.weight))))
+ranks <- list(
+   rep.1=data.frame(
+       expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4),
+           sybil::allGenes(mod.weight))),
+   rep.2=data.frame(
+       expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4.1),
+           sybil::allGenes(mod.weight))))
 fn <- fitness(model=mod.weight, ranks=ranks, step=200, draw.num=1)
 gene.sets <- list(X1=head(sybil::allGenes(mod.weight)), X2=tail(sybil::allGenes(mod.weight)))
 sgd <- submnet(model=mod.weight, fn=fn, rank.best="expr",

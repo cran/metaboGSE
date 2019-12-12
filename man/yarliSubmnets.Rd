@@ -11,7 +11,7 @@ data(yarliSubmnets)
 Submodel construction example for Yarrowia lipolytica
 }
 \references{
-Tran, V.D.T. et al. (2018) Condition-specific series of metabolic  sub-networks and its application for gene set enrichment analysis. Bioinformatics, bty929.
+Tran, V.D.T. et al. (2018) Condition-specific series of metabolic sub-networks and its application for gene set enrichment analysis. Bioinformatics 35(13), 2258-2266.
 }
 \author{
 Van Du T. Tran

@@ -15,7 +15,8 @@ rmGenes(model, genes)
 The submodel.
 }
 \description{
-This functions creates a submodel by removing genes from a given model. It is similar to \code{deleteModelGenes} from the COBRA Toolbox.
+This functions creates a submodel by removing genes from a given model. It is similar to
+\code{deleteModelGenes} from the COBRA Toolbox.
 }
 \examples{
 data(Ec_core)

@@ -4,10 +4,19 @@
 \alias{fitness}
 \title{Fitness of gene removal-based submodels with different gene rankings}
 \usage{
-fitness(model, ranks, rescue.weight = NULL, step = 1, draw.num = 0,
-  obj.react = NA, mc.cores = 1, timeout = 12,
-  tol = SYBIL_SETTINGS("TOLERANCE"), solver = SYBIL_SETTINGS("SOLVER"),
-  method = SYBIL_SETTINGS("METHOD"))
+fitness(
+  model,
+  ranks,
+  rescue.weight = NULL,
+  step = 1,
+  draw.num = 0,
+  obj.react = NA,
+  mc.cores = 1,
+  timeout = 12,
+  tol = SYBIL_SETTINGS("TOLERANCE"),
+  solver = SYBIL_SETTINGS("SOLVER"),
+  method = SYBIL_SETTINGS("METHOD")
+)
 }
 \arguments{
 \item{model}{An object of class \code{modelorg} indicating the weighted \code{rescue} model obtained from the rescue process.}
@@ -44,9 +53,12 @@ This function computes the fitness of submodels by removing genes in different g
 data(Ec_core)
 mod <- rescue(Ec_core, target=0.1)
 mod.weight <- changeObjFunc(mod$rescue, react=rownames(mod$coef), obj_coef=mod$coef)
-ranks <- list(rep.1=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-                                             mean=5, sd=4), sybil::allGenes(mod.weight))),
-              rep.2=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-                                             mean=5, sd=4.1), sybil::allGenes(mod.weight))))
+ranks <- list(
+   rep.1=data.frame(
+       expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4),
+           sybil::allGenes(mod.weight))),
+   rep.2=data.frame(
+       expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4.1),
+           sybil::allGenes(mod.weight))))
 fn <- fitness(model=mod.weight, ranks=ranks, step=200, draw.num=1)
 }

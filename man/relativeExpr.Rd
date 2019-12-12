@@ -15,7 +15,7 @@ relativeExpr(expr, power = 1)
 A matrix of relative log2 counts.
 }
 \description{
-This function computes the relative gene expression (log2 counts) in a sample w.r.t all samples.
+This function computes the relative gene expression (log2 counts) in a sample w.r.t. all samples.
 }
 \examples{
 data(exprMaguire)

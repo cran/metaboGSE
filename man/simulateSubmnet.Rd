@@ -4,8 +4,14 @@
 \alias{simulateSubmnet}
 \title{Plot fitness of submodels built by gene removal in a condition}
 \usage{
-simulateSubmnet(sgd, mc.cores = 1, ranks.name = NULL, njt = NULL,
-  cols = NULL, ltys = NULL)
+simulateSubmnet(
+  sgd,
+  mc.cores = 1,
+  ranks.name = NULL,
+  njt = NULL,
+  cols = NULL,
+  ltys = NULL
+)
 }
 \arguments{
 \item{sgd}{An object of class \code{scoreGeneDel}.}
@@ -25,5 +31,7 @@ This function plots the fitness of submodels built by gene removal in a conditio
 }
 \examples{
 data(yarliSubmnets)
-simulateSubmnet(yarliSubmnets$DN)
+\donttest{
+simulateSubmnet(yarliSubmnets$UH)
+}
 }

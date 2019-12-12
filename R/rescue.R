@@ -94,9 +94,9 @@ diagnosticTolerance <- function(model, mc.cores = 2,
 #' @param prefix.rescue A string indicating the prefix of output rescue model. Default: no output.
 #' @param prefix.rescued A string indicating the prefix of output rescued model. Default: no output.
 #' @param rescue.threshold A numeric value indicating the threshold to consider a rescue. Default: 1e-5.
-#' @return The rescue and rescued models, as well as the coefficient set to rescue reactions. SYBIL_SETTINGS("OPT_DIRECTION") is set as "min".
+#' @return The rescue and rescued models, as well as the coefficient set to rescue reactions.
+#' \code{SYBIL_SETTINGS("OPT_DIRECTION")} is set to "min".
 #' @import sybil
-#' @importFrom sys eval_safe
 #' @export
 #' @examples 
 #' data(Ec_core)
@@ -191,7 +191,7 @@ rescue <- function(model, target, react = NULL, weight.type = 'r', timeout = 12,
                     metcomps <- c(which(mod_compart(model.rescue) == comp.reco), met.comp[met.obj.ind[mi]])
                 }
                 if (! paste("HELP", reco.type, rea.suffix, sep='') %in% react_id(model.rescue)) {
-                    model.rescue <- addReactFixed(model   = model.rescue,
+                    model.rescue <- addReactFixed(model      = model.rescue,
                                                   id         = paste("HELP", reco.type, rea.suffix, sep=''),
                                                   met        = mets,
                                                   Scoef      = c(-1, 1),
@@ -270,8 +270,11 @@ rescue <- function(model, target, react = NULL, weight.type = 'r', timeout = 12,
         fba <- optimizeProb(model.weight, algorithm='fba', retOptSol=T, lpdir='min',
                             solverParm=list(CPX_PARAM_TILIM=timeout))
     } else {
+        if (!requireNamespace("unix", quietly = TRUE)) {
+            stop("Please install unix: install.packages('unix')")
+        }
         fba <- tryCatch(
-            sys::eval_safe(optimizeProb(model.weight, algorithm='fba',
+            unix::eval_safe(optimizeProb(model.weight, algorithm='fba',
                                         retOptSol=T, lpdir='min'),
                            timeout=timeout),
             error=function(e) {
@@ -312,19 +315,19 @@ rescue <- function(model, target, react = NULL, weight.type = 'r', timeout = 12,
         ub   <- ifelse(regexpr(rea, pattern="^RECO_", perl=T) > 0,
                        abs(flux.reco[rea]),
                        uppbnd(model.rescue)[rind])
-        model.rescued <- addReactFixed(model    = model.rescued,
-                                  id         = rea,
-                                  met        = names(mets)[mind],
-                                  Scoef      = mets[mind],
-                                  reversible = react_rev(model.rescue)[rind],
-                                  lb         = lowbnd(model.rescue)[rind],
-                                  ub         = ub,
-                                  obj        = 0,
-                                  gprAssoc   = "",
-                                  metName    = names(mets)[mind],
-                                  metComp    = match(metcomps, mod_compart(model.rescued))
-                                  )
-
+        model.rescued <- addReactFixed(model      = model.rescued,
+                                       id         = rea,
+                                       met        = names(mets)[mind],
+                                       Scoef      = mets[mind],
+                                       reversible = react_rev(model.rescue)[rind],
+                                       lb         = lowbnd(model.rescue)[rind],
+                                       ub         = ub,
+                                       obj        = 0,
+                                       gprAssoc   = "",
+                                       metName    = names(mets)[mind],
+                                       metComp    = match(metcomps, mod_compart(model.rescued))
+                                       )
+        
         ##- modify targeted reactions in rescued model
         if (regexpr(rea, pattern="^RECO_", perl=T) > 0) {
             if (regexpr(rea, pattern="_PUSH_", perl=T) > 0) {

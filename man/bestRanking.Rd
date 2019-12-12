@@ -19,10 +19,13 @@ This function computes the performance indices of different rankings compared to
 data(Ec_core)
 mod <- rescue(Ec_core, target=0.1)
 mod.weight <- changeObjFunc(mod$rescue, react=rownames(mod$coef), obj_coef=mod$coef)
-ranks <- list(rep.1=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-                                             mean=5, sd=4), sybil::allGenes(mod.weight))),
-              rep.2=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-                                             mean=5, sd=4.1), sybil::allGenes(mod.weight))))
+ranks <- list(
+   rep.1=data.frame(
+       expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4),
+           sybil::allGenes(mod.weight))),
+   rep.2=data.frame(
+       expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4.1),
+           sybil::allGenes(mod.weight))))
 fn <- fitness(model=mod.weight, ranks=ranks, step=200, draw.num=1)
 bestRanking(list(fn))
 }

@@ -24,19 +24,7 @@ NULL
 #' @docType data
 #' @usage data(yarli2GO)
 #' @source Uniprot
-#' @references Tran, V.D.T. et al. (2018) Condition-specific series of metabolic  sub-networks and its application for gene set enrichment analysis. Bioinformatics, bty929.
-NULL
-
-
-#' topGOdata object built from yarli2GO
-#'
-#' @name yarliGOdata
-#' @docType data
-#' @usage data(yarliGOdata)
-#' @format An object of class \code{"topGOdata"}.
-#' @importClassesFrom topGO topGOdata
-#' @source topGO_2.24.0, GO.db_3.2.2
-#' @references Tran, V.D.T. et al. (2018) Condition-specific series of metabolic  sub-networks and its application for gene set enrichment analysis. Bioinformatics, bty929.
+#' @references Tran, V.D.T. et al. (2018) Condition-specific series of metabolic sub-networks and its application for gene set enrichment analysis. Bioinformatics 35(13), 2258-2266.
 NULL
 
 
@@ -46,7 +34,7 @@ NULL
 #' @docType data
 #' @usage data(yarliSubmnets)
 #' @author Van Du T. Tran
-#' @references Tran, V.D.T. et al. (2018) Condition-specific series of metabolic  sub-networks and its application for gene set enrichment analysis. Bioinformatics, bty929.
+#' @references Tran, V.D.T. et al. (2018) Condition-specific series of metabolic sub-networks and its application for gene set enrichment analysis. Bioinformatics 35(13), 2258-2266.
 NULL
 
 
@@ -56,5 +44,5 @@ NULL
 #' @docType data
 #' @usage data(yarliGSE)
 #' @author Van Du T. Tran
-#' @references Tran, V.D.T. et al. (2018) Condition-specific series of metabolic  sub-networks and its application for gene set enrichment analysis. Bioinformatics, bty929.
+#' @references Tran, V.D.T. et al. (2018) Condition-specific series of metabolic sub-networks and its application for gene set enrichment analysis. Bioinformatics 35(13), 2258-2266.
 NULL

@@ -13,5 +13,5 @@ citEntry(
     year = "2018",
     url = "https://doi.org/10.1093/bioinformatics/bty929",
     doi = "10.1093/bioinformatics/bty929",
-    textVersion = "Tran, V.D.T. et al. (2018) Condition-specific series of metabolic sub-networks and its application for gene set enrichment analysis. Bioinformatics, bty929."
+    textVersion = "Tran, V.D.T. et al. (2018) Condition-specific series of metabolic sub-networks and its application for gene set enrichment analysis. Bioinformatics 35(13), 2258-2266."
 )

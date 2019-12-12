@@ -4,8 +4,12 @@
 \alias{diagnosticTolerance}
 \title{Compute appropriate tolerance for the given model}
 \usage{
-diagnosticTolerance(model, mc.cores = 2,
-  solver = SYBIL_SETTINGS("SOLVER"), method = SYBIL_SETTINGS("METHOD"))
+diagnosticTolerance(
+  model,
+  mc.cores = 2,
+  solver = SYBIL_SETTINGS("SOLVER"),
+  method = SYBIL_SETTINGS("METHOD")
+)
 }
 \arguments{
 \item{model}{An object of class \code{modelorg}.}

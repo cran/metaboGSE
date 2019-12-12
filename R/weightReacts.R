@@ -8,7 +8,7 @@
 #' @param gene.num The number of genes to remove. If 1, \code{oneGeneDel} will be performed and draw.num will be ignored. Default: 1.
 #' @param draw.num The number of random draws. Default: 1000. It is ignored when gene.nume = 1.
 #' @return An object of class \code{dist}, containing distances between rescue reactions in the given model.
-#' @import sybil
+#' @import sybil parallel
 #' @keywords internal
 rescueDist <- function(model, mc.cores = 1, gene.num = 1, draw.num = 1000, tol = SYBIL_SETTINGS("TOLERANCE")) {
     if (!is(model, "modelorg")) {
@@ -164,7 +164,8 @@ rescueDist <- function(model, mc.cores = 1, gene.num = 1, draw.num = 1000, tol =
 #' @examples 
 #' data(Ec_core)
 #' mod <- rescue(Ec_core, target=0.1)
-#' weightReacts(changeObjFunc(mod$rescue, react=rownames(mod$coef), obj_coef=mod$coef))
+#' weightReacts(changeObjFunc(mod$rescue, react=rownames(mod$coef),
+#'                           obj_coef=mod$coef))
 #' @export
 weightReacts <- function(model, mc.cores = 1, gene.num = 1, draw.num = 1000) {
     if (!is(model, "modelorg")) {
@@ -206,7 +207,7 @@ weightReacts <- function(model, mc.cores = 1, gene.num = 1, draw.num = 1000) {
         colnames(rxnGenes) <- sybil::allGenes(model)
         
         rescue.met.genes <- lapply(rescue.met.reacs, function(metreacs) {
-            unlist(lapply(genes(model)[which(react_id(model) %in% metreacs)], function(g) {
+            unlist(lapply(sybil::genes(model)[which(react_id(model) %in% metreacs)], function(g) {
                 g[g != ""]
             }))
         })

@@ -16,7 +16,8 @@
 #' @param sub.reacs Remaining reactions in submodels after propagation.
 #' @param sub.metas Remaining metabolites in submodels after propagation.
 #' @param rescue.met Fraction of every rescued metabolite among random draws.
-#' @examples 
+#' @return An object of class \code{scoreGeneDel}.
+#' @examples
 #' data(yarliSubmnets)
 #' attributes(yarliSubmnets[[1]])
 #' @export
@@ -65,16 +66,18 @@ scoreGeneDel <- function(model = NULL, condition = NA,
 #' @param solver \code{\link{sybil}} solver. Default: \code{SYBIL_SETTINGS("SOLVER")}.
 #' @param method \code{\link{sybil}} method. Default: \code{SYBIL_SETTINGS("METHOD")}.
 #' @return An object of class \code{scoreGeneDel} for the submodel construction simulation.
-#' @import sybil stats
-#' @importFrom sys eval_safe
+#' @import sybil parallel stats
 #' @examples 
 #' data(Ec_core)
 #' mod <- rescue(Ec_core, target=0.1)
 #' mod.weight <- changeObjFunc(mod$rescue, react=rownames(mod$coef), obj_coef=mod$coef)
-#' ranks <- list(rep.1=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-#'                                              mean=5, sd=4), sybil::allGenes(mod.weight))),
-#'               rep.2=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-#'                                              mean=5, sd=4.1), sybil::allGenes(mod.weight))))
+#' ranks <- list(
+#'    rep.1=data.frame(
+#'        expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4),
+#'            sybil::allGenes(mod.weight))),
+#'    rep.2=data.frame(
+#'        expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4.1),
+#'            sybil::allGenes(mod.weight))))
 #' fn <- fitness(model=mod.weight, ranks=ranks, step=200, draw.num=1)
 #' @export
 fitness <- function(model, ranks, rescue.weight = NULL, step = 1, draw.num = 0, obj.react = NA,
@@ -165,8 +168,11 @@ fitness <- function(model, ranks, rescue.weight = NULL, step = 1, draw.num = 0, 
         fba.weight <- optimizeProb(model, algorithm="fba", retOptSol=T, lpdir='min',
                                    solverParm=list(CPX_PARAM_TILIM=timeout))
     } else {
+        if (!requireNamespace("unix", quietly = TRUE)) {
+            stop("Please install unix: install.packages('unix')")
+        }
         fba.weight <- tryCatch(
-            sys::eval_safe(optimizeProb(model, algorithm="fba",
+            unix::eval_safe(optimizeProb(model, algorithm="fba",
                                         retOptSol=T, lpdir='min'),
                            timeout=timeout),
             error=function(e) {
@@ -326,7 +332,7 @@ fitness <- function(model, ranks, rescue.weight = NULL, step = 1, draw.num = 0, 
                                       solverParm=list(CPX_PARAM_TILIM=timeout))
             } else {
                 fba.x <- tryCatch(
-                    sys::eval_safe(optimizeProb(changeObjFunc(model,
+                    unix::eval_safe(optimizeProb(changeObjFunc(model,
                                                               react=names(obj.coef.reco),
                                                               obj_coef=obj.coef.reco),
                                                 gene=x, lb=0, ub=0,
@@ -413,10 +419,13 @@ fitness <- function(model, ranks, rescue.weight = NULL, step = 1, draw.num = 0, 
 #' data(Ec_core)
 #' mod <- rescue(Ec_core, target=0.1)
 #' mod.weight <- changeObjFunc(mod$rescue, react=rownames(mod$coef), obj_coef=mod$coef)
-#' ranks <- list(rep.1=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-#'                                              mean=5, sd=4), sybil::allGenes(mod.weight))),
-#'               rep.2=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-#'                                              mean=5, sd=4.1), sybil::allGenes(mod.weight))))
+#' ranks <- list(
+#'    rep.1=data.frame(
+#'        expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4),
+#'            sybil::allGenes(mod.weight))),
+#'    rep.2=data.frame(
+#'        expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4.1),
+#'            sybil::allGenes(mod.weight))))
 #' fn <- fitness(model=mod.weight, ranks=ranks, step=200, draw.num=1)
 #' bestRanking(list(fn))
 #' @export
@@ -475,19 +484,21 @@ bestRanking <- function(fns) {
 #' @param obj.react A string indicating objective reaction ID. Default: reaction producing BIOMASS.
 #' @param timeout The maximum time in seconds to allow for LP call to return. Default: 12.
 #' @param tol The maximum value to be considered null. Default: \code{SYBIL_SETTINGS("TOLERANCE")}.
-#' @param solver \code{\link{sybil}} solver. Default: \code{SYBIL_SETTINGS("SOLVER")}.
-#' @param method \code{\link{sybil}} method. Default: \code{SYBIL_SETTINGS("METHOD")}.
+#' @param solver \code{sybil} solver. Default: \code{SYBIL_SETTINGS("SOLVER")}.
+#' @param method \code{sybil} method. Default: \code{SYBIL_SETTINGS("METHOD")}.
 #' @return An object of class \code{scoreGeneDel} for the submodel construction simulation.
-#' @import sybil stats
-#' @importFrom sys eval_safe
+#' @import sybil parallel stats
 #' @examples 
 #' data(Ec_core)
 #' mod <- rescue(Ec_core, target=0.1)
 #' mod.weight <- changeObjFunc(mod$rescue, react=rownames(mod$coef), obj_coef=mod$coef)
-#' ranks <- list(rep.1=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-#'                                              mean=5, sd=4), sybil::allGenes(mod.weight))),
-#'               rep.2=data.frame(expr=setNames(rnorm(length(sybil::allGenes(mod.weight)),
-#'                                              mean=5, sd=4.1), sybil::allGenes(mod.weight))))
+#' ranks <- list(
+#'    rep.1=data.frame(
+#'        expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4),
+#'            sybil::allGenes(mod.weight))),
+#'    rep.2=data.frame(
+#'        expr=setNames(rnorm(length(sybil::allGenes(mod.weight)), mean=5, sd=4.1),
+#'            sybil::allGenes(mod.weight))))
 #' fn <- fitness(model=mod.weight, ranks=ranks, step=200, draw.num=1)
 #' gene.sets <- list(X1=head(sybil::allGenes(mod.weight)), X2=tail(sybil::allGenes(mod.weight)))
 #' sgd <- submnet(model=mod.weight, fn=fn, rank.best="expr",
@@ -599,8 +610,11 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
                                            retOptSol=T, lpdir='min',
                                            solverParm=list(CPX_PARAM_TILIM=timeout))
                 } else {
+                    if (!requireNamespace("unix", quietly = TRUE)) {
+                        stop("Please install unix: install.packages('unix')")
+                    }
                     fba.ij <- tryCatch(
-                        sys::eval_safe(optimizeProb(submod.obj, algorithm="fba",
+                        unix::eval_safe(optimizeProb(submod.obj, algorithm="fba",
                                                     retOptSol=T, lpdir='min'),
                                        timeout=timeout),
                         error=function(e) {
@@ -627,29 +641,33 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
             if (LPSUCCESS) {
                 ##- FVA should not be performed with objective on RECOs since RECOs would be blocked
                 ##- reset the objective function to the initial (BIOMASS by default) before FVA
-                submod.obj <- changeObjFunc(submod, react=obj.react, obj_coef=1)
+                submod.obj <- changeObjFunc(submod, react=obj.react, obj_coef=rep(1, length(obj.react)))
                 if (mc.cores2 > 2) {
                     if (SYBIL_SETTINGS("SOLVER") == "glpkAPI") {
                         subfva.obj <- suppressMessages(multiDel(submod.obj,
                                                                 nProc=mc.cores2,
                                                                 todo="fluxVar",
                                                                 del1=submod.fd.0,
+                                                                fixObjVal=F,
                                                                 solverParm=list(TM_LIM=1000*timeout)))
                     } else if (SYBIL_SETTINGS("SOLVER") == "lpSolveAPI") {
                         subfva.obj <- suppressMessages(multiDel(submod.obj,
                                                                 nProc=mc.cores2,
                                                                 todo="fluxVar",
                                                                 del1=submod.fd.0,
+                                                                fixObjVal=F,
                                                                 solverParm=list(timeout=timeout)))
                     } else if (SYBIL_SETTINGS("SOLVER") == "cplexAPI") {
                         subfva.obj <- suppressMessages(multiDel(submod.obj,
                                                                 nProc=mc.cores2,
                                                                 todo="fluxVar",
                                                                 del1=submod.fd.0,
+                                                                fixObjVal=F,
                                                                 solverParm=list(CPX_PARAM_TILIM=timeout)))
                     } else { #eval_safe does not work with multiDel!
                         subfva.obj <- tryCatch(
-                            sys::eval_safe(suppressMessages(fluxVar(submod.obj, react=submod.fd.0, verboseMode=0)),
+                            unix::eval_safe(suppressMessages(fluxVar(submod.obj, react=submod.fd.0,
+                                                                    fixObjVal=F, verboseMode=0)),
                                            timeout=timeout*30),
                             error=function(e) {
                                 subfva.obj <- NULL
@@ -664,17 +682,21 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
                     }
                 } else {
                     if (SYBIL_SETTINGS("SOLVER") == "glpkAPI") {
-                        subfva.obj <- suppressMessages(fluxVar(submod.obj, react=submod.fd.0, verboseMode=0,
+                        subfva.obj <- suppressMessages(fluxVar(submod.obj, react=submod.fd.0,
+                                                               fixObjVal=F, verboseMode=0,
                                                                solverParm=list(TM_LIM=1000*timeout)))
                     } else if (SYBIL_SETTINGS("SOLVER") == "lpSolveAPI") {
-                        subfva.obj <- suppressMessages(fluxVar(submod.obj, react=submod.fd.0, verboseMode=0,
+                        subfva.obj <- suppressMessages(fluxVar(submod.obj, react=submod.fd.0,
+                                                               fixObjVal=F, verboseMode=0,
                                                                solverParm=list(timeout=timeout)))
                     } else if (SYBIL_SETTINGS("SOLVER") == "cplexAPI") {
-                        subfva.obj <- suppressMessages(fluxVar(submod.obj, react=submod.fd.0, verboseMode=0,
+                        subfva.obj <- suppressMessages(fluxVar(submod.obj, react=submod.fd.0,
+                                                               fixObjVal=F, verboseMode=0,
                                                                solverParm=list(CPX_PARAM_TILIM=timeout)))
                     } else {
                         subfva.obj <- tryCatch(
-     	                    sys::eval_safe(suppressMessages(fluxVar(submod.obj, react=submod.fd.0, verboseMode=0)),
+                            unix::eval_safe(suppressMessages(fluxVar(submod.obj, react=submod.fd.0,
+                                                                    fixObjVal=F, verboseMode=0)),
                                            timeout=timeout*30),
                             error=function(e) {
  	       			subfva.obj <- NULL
@@ -725,7 +747,7 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
                                            solverParm=list(CPX_PARAM_TILIM=timeout))
                 } else {
                     subfba <- tryCatch(
-                        sys::eval_safe(optimizeProb(submod, algorithm="fba",
+                        unix::eval_safe(optimizeProb(submod, algorithm="fba",
                                                     retOptSol=T, lpdir='min'),
                                        timeout=timeout),
                         error=function(e) {
@@ -886,10 +908,12 @@ submnet <- function(model, fn, rank.best = "expr", gene.sets = NULL,
 #' @param njt An object of class \code{phylo} for colored plot of fitness weighting schema resulting from \code{weightReacts}. Default: NULL.
 #' @param cols Colors for conditions. Default: rainbow colors.
 #' @param ltys Line types for conditions. Default: incrementing line types in R.
-#' @import sybil grDevices graphics
+#' @import sybil parallel grDevices graphics
 #' @examples
 #' data(yarliSubmnets)
-#' simulateSubmnet(yarliSubmnets$DN)
+#' \donttest{
+#' simulateSubmnet(yarliSubmnets$UH)
+#' }
 #' @export
 simulateSubmnet <- function(sgd, mc.cores = 1, ranks.name = NULL, njt = NULL, cols = NULL, ltys = NULL) {
     ##- settings ----
@@ -1188,17 +1212,18 @@ simulateSubmnet <- function(sgd, mc.cores = 1, ranks.name = NULL, njt = NULL, co
         save(colors.met, file=paste0(condition, "_colors.met.Rdata"))
     }
     ##-----
+    return (NULL)
 }
 
 
 #' Generate a submodel by removing genes
 #'
-#' This functions creates a submodel by removing genes from a given model. It is similar to \code{deleteModelGenes} from the COBRA Toolbox.
+#' This functions creates a submodel by removing genes from a given model. It is similar to
+#' \code{deleteModelGenes} from the COBRA Toolbox.
 #' @param model An object of class \code{modelorg}.
 #' @param genes A vector of genes to remove.
 #' @return The submodel.
-#' @import sybil
-#' @importFrom utils packageVersion
+#' @import sybil utils
 #' @examples 
 #' data(Ec_core)
 #' rmGenes(Ec_core, head(sybil::allGenes(Ec_core)))

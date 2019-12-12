@@ -4,8 +4,13 @@
 \alias{rescueDist}
 \title{Compute distances of rescue reactions}
 \usage{
-rescueDist(model, mc.cores = 1, gene.num = 1, draw.num = 1000,
-  tol = SYBIL_SETTINGS("TOLERANCE"))
+rescueDist(
+  model,
+  mc.cores = 1,
+  gene.num = 1,
+  draw.num = 1000,
+  tol = SYBIL_SETTINGS("TOLERANCE")
+)
 }
 \arguments{
 \item{model}{An object of class \code{modelorg}.}

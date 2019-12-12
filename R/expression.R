@@ -1,6 +1,6 @@
 #' Relative expression data (log2 counts)
 #'
-#' This function computes the relative gene expression (log2 counts) in a sample w.r.t all samples.
+#' This function computes the relative gene expression (log2 counts) in a sample w.r.t. all samples.
 #' @param expr A matrix of expression data (log2 counts), with gene per row and sample per column.
 #' @param power The power n of relative expression: (x^n/<x>)^(1/n). Default: 1.
 #' @return A matrix of relative log2 counts.
