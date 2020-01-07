@@ -4,6 +4,14 @@
 \title{metaboGSE News}
 \encoding{UTF-8}
 
+\section{Changes in version 1.2.3 2020-01-03}{
+  \itemize{
+    \item Remove dependence on \code{topGO}.
+    \item Move \code{GO.db} to Imports.
+  }
+}
+% ---------------------------------------------------------------------------- %
+
 \section{Changes in version 1.2.2 2019-12-06}{
   \itemize{
     \item Change sys::eval_safe to unix::eval_safe

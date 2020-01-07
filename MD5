@@ -1,9 +1,9 @@
-bdf7f3b74079ace60074813bf8e04217 *DESCRIPTION
-5368171a01407234a386e3cffe7a077e *NAMESPACE
+8fa2f435acb2e7a60c36e22120955345 *DESCRIPTION
+8fb31bcfb7d9c7b8178b2a2ec1d9f9a1 *NAMESPACE
 3847890d4b6311df1bce6ee4e5ac455f *R/addReactFixed.R
 f3232a028bc628b6133351d2968c1db5 *R/data.R
 3ba48264b110b99349075161efed2e67 *R/expression.R
-fdb79cac2479fea1218490aa38fccbe7 *R/metaboGSE.R
+cbf42abe5ae7df9672c9dbf7879d5f55 *R/metaboGSE.R
 d7e54bacf397d34bccb68485fec736c2 *R/rescue.R
 df48d0c0b028006ab2cee365a0f7f893 *R/submnet.R
 6f0453e5746a0459d8afc2339a19018c *R/weightReacts.R
@@ -15,10 +15,10 @@ ecd4b434c9fbe227792a13a0a1bc9204 *data/yarli2GO.RData
 c7466adcc11715c1b2f5765ba41d93cf *data/yarliGSE.RData
 194ca29b42c982791143abd7680b9519 *data/yarliSubmnets.RData
 bc4208ddc92fef9bed0e3aede8cc32d6 *inst/CITATION
-27a7e30a760b51101ef0569ba3326df4 *inst/NEWS.Rd
+14416007fa6aa7360839bca3e349de9d *inst/NEWS.Rd
 c1aa1a86b49fcff4a5dbcc6277b9224b *inst/doc/metaboGSE.R
 db084de42a96d831bcbd864c8279c385 *inst/doc/metaboGSE.Rmd
-590f5396f68a12ce4514806e0dfaf8b3 *inst/doc/metaboGSE.pdf
+aa4a8e140c4fb49250758f543da05509 *inst/doc/metaboGSE.pdf
 8e87bc26ef9037fe734cdfc44e1f48ed *man/abbr.Rd
 69fef69e7a0f4366bead894f4fd2f42c *man/addReactFixed.Rd
 f7146853b11d2d6bf993f3d14043d364 *man/area.Rd

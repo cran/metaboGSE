@@ -137,8 +137,7 @@ maxArea <- function(y, x = NULL) {
 #' @param cols Colors for conditions. Default: rainbow colors.
 #' @param ltys Line types for conditions. Default: incrementing line types in R.
 #' @return Gene set enrichment information
-#' @import parallel utils grDevices graphics
-#' @importFrom AnnotationDbi Term
+#' @import parallel utils grDevices graphics GO.db
 #' @examples
 #' data(yarliSubmnets)
 #' metaboGSE(yarliSubmnets[c('SH','SN')], gene.sets = "GO:0006696",
