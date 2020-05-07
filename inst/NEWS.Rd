@@ -4,6 +4,13 @@
 \title{metaboGSE News}
 \encoding{UTF-8}
 
+\section{Changes in version 1.2.4 2020-05-07}{
+  \itemize{
+    \item Remove dependence on \code{GO.db}, \code{ctc}, \code{clpAPI}, \code{KernSmooth}.
+  }
+}
+% ---------------------------------------------------------------------------- %
+
 \section{Changes in version 1.2.3 2020-01-03}{
   \itemize{
     \item Remove dependence on \code{topGO}.

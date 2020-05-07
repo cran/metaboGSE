@@ -137,7 +137,7 @@ maxArea <- function(y, x = NULL) {
 #' @param cols Colors for conditions. Default: rainbow colors.
 #' @param ltys Line types for conditions. Default: incrementing line types in R.
 #' @return Gene set enrichment information
-#' @import parallel utils grDevices graphics GO.db
+#' @import parallel utils grDevices graphics
 #' @examples
 #' data(yarliSubmnets)
 #' metaboGSE(yarliSubmnets[c('SH','SN')], gene.sets = "GO:0006696",
@@ -200,11 +200,11 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
             test <- "likelihood"
         }
     }
-    if (contrast) {
-        if (!requireNamespace("ctc", quietly = TRUE)) {
-            stop("Please install ctc: source('https://bioconductor.org/biocLite.R'); biocLite('ctc')")
-        }
-    }
+#    if (contrast) {
+#        if (!requireNamespace("ctc", quietly = TRUE)) {
+#            stop("Please install ctc: source('https://bioconductor.org/biocLite.R'); biocLite('ctc')")
+#        }
+#    }
     RNGkind("L'Ecuyer-CMRG")
     set.seed(1000)
     ##-----
@@ -403,13 +403,13 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                 ##-----
                 
                 ##- Newick ----
-                if (contrast) {
-                    gs.hc.ec <- hclust(dist(t(gs.fracs.itp.mean), method="manhattan"), method="ward.D")
-                    gs.newick.ec <- gsub(ctc::hc2Newick(gs.hc.ec), pattern=":[.0-9]+|;$", replacement="", perl=T)
-                    groupcut.ec <- sort(cutree(gs.hc.ec, k=2))
-                    group1.ec <- names(which(groupcut.ec==1))
-                    group2.ec <- names(which(groupcut.ec==2))
-                }
+                #if (contrast) {
+                #    gs.hc.ec <- hclust(dist(t(gs.fracs.itp.mean), method="manhattan"), method="ward.D")
+                #    gs.newick.ec <- gsub(ctc::hc2Newick(gs.hc.ec), pattern=":[.0-9]+|;$", replacement="", perl=T)
+                #    groupcut.ec <- sort(cutree(gs.hc.ec, k=2))
+                #    group1.ec <- names(which(groupcut.ec==1))
+                #    group2.ec <- names(which(groupcut.ec==2))
+                #}
                 ##-----
             }
             
@@ -540,8 +540,8 @@ metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                     }), conds))
                     
                     gs.hc.ec <- hclust(conds.dist, method='ward.D')
-                    gs.newick.ec <- gsub(ctc::hc2Newick(gs.hc.ec),
-                                         pattern=":[.0-9]+|e-[0-9]+|;$", replacement="", perl=T)
+                    #gs.newick.ec <- gsub(ctc::hc2Newick(gs.hc.ec),
+                    #                     pattern=":[.0-9]+|e-[0-9]+|;$", replacement="", perl=T)
                     groupcut.ec <- sort(cutree(gs.hc.ec, k=2))
                     group1.ec <- names(which(groupcut.ec==1))
                     group2.ec <- names(which(groupcut.ec==2))
