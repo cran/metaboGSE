@@ -56,6 +56,8 @@ This function performs the gene set enrichment analysis.
 }
 \examples{
 data(yarliSubmnets)
+\donttest{
 metaboGSE(yarliSubmnets[c('SH','SN')], gene.sets = "GO:0006696",
          method="perm", nperm=10, nrand=10)
+}
 }

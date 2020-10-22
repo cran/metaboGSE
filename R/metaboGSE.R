@@ -140,8 +140,10 @@ maxArea <- function(y, x = NULL) {
 #' @import parallel utils grDevices graphics
 #' @examples
 #' data(yarliSubmnets)
+#' \donttest{
 #' metaboGSE(yarliSubmnets[c('SH','SN')], gene.sets = "GO:0006696",
 #'          method="perm", nperm=10, nrand=10)
+#' }
 #' @export
 metaboGSE <- function(scores, gene.sets = NULL, method = "perm", test = NA,
                       nperm = 1000, nrand = 1000, mc.cores = 1,
